@@ -102,6 +102,9 @@ setup(
     include_package_data=True,
     platforms='any',
     entry_points={
+        'invenio_admin.views': [
+            'harvest_admin_view = invenio_oaiharvester.admin:harvest_admin_view',
+        ],
         'invenio_base.apps': [
             'invenio_oaiharvester = invenio_oaiharvester:InvenioOAIHarvester',
         ],

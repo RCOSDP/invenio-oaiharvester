@@ -22,7 +22,7 @@
 from __future__ import absolute_import, print_function
 
 import datetime
-
+import enum
 from invenio_db import db
 
 
@@ -52,4 +52,31 @@ class OAIHarvestConfig(db.Model):
         self.lastrun = new_date or datetime.datetime.now()
 
 
-__all__ = ('OAIHarvestConfig',)
+
+
+
+class HarvestSettings(db.Model):
+    """Harvest Settings"""
+    class UpdateStyle(enum.Enum):
+        Difference = 0
+        Bulk = 1
+
+    __tablename__ = "harvest_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    repository_name = db.Column(db.String(20), unique=True, nullable=False)
+    base_url = db.Column(db.String(255), nullable=False)
+    from_date = db.Column(db.Date, nullable=True)
+    until_date = db.Column(db.Date, nullable=True)
+    set_spec = db.Column(db.String(255), nullable=True)
+    metadata_prefix = db.Column(db.String(255), nullable=False)
+    target_index = db.Column(db.Integer, nullable=False)
+    update_sytle = db.Column(db.Enum(UpdateStyle),
+        nullable=False,
+        default=UpdateStyle.Difference)
+    auto_distribution = db.Column(db.Boolean(name='auto_distribution'),
+        nullable=False,
+        default=False)
+
+__all__ = ('OAIHarvestConfig',
+           'HarvestSettings')
