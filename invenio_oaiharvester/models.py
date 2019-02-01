@@ -57,7 +57,7 @@ class OAIHarvestConfig(db.Model):
 
 class HarvestSettings(db.Model):
     """Harvest Settings"""
-    class UpdateStyle(enum.Enum):
+    class UpdateStyle(enum.IntEnum):
         Difference = 0
         Bulk = 1
 
@@ -71,7 +71,7 @@ class HarvestSettings(db.Model):
     set_spec = db.Column(db.String(255), nullable=True)
     metadata_prefix = db.Column(db.String(255), nullable=False)
     target_index = db.Column(db.Integer, nullable=False)
-    update_sytle = db.Column(db.Enum(UpdateStyle),
+    update_style = db.Column(db.Integer,
         nullable=False,
         default=UpdateStyle.Difference)
     auto_distribution = db.Column(db.Boolean(name='auto_distribution'),

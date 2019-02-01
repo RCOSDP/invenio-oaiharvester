@@ -25,39 +25,14 @@ import sys
 from flask import abort, current_app, flash, request
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_babelex import gettext as _
+from wtforms.fields import RadioField
+from weko_index_tree.models import Index
 from .models import HarvestSettings
 
 def _(x):
     return x
-
-"""
-class HarvestSettingView(BaseView):
-
-    @expose('/', methods=['GET', 'POST'])
-    def index(self):
-        try:
-            if request.method == 'POST':
-                pass
-            return self.render()
-        except:
-            current_app.logger.error('Unexpected error: ', sys.exc_info()[0])
-            return abort(400)
-
-harvest_setting_view = {
-    'view_class': HarvestSettingView,
-    'kwargs': {
-        'category': _('OAI-PMH'),
-        'name': _('Harvesting'),
-        'endpoint': 'harvesting'
-    }
-}
-
-__all__ = (
-    'harvest_setting_view',
-    'HarvestSettingView',
-)
-"""
 
 class HarvestSettingView(ModelView):
     can_create = True
@@ -65,6 +40,17 @@ class HarvestSettingView(ModelView):
     can_edit = True
     can_view_details = True
     page_size = 25
+    form_overrides = dict(
+        target_index=QuerySelectField,
+        update_style=RadioField)
+    form_args = dict(
+        target_index=dict(
+            query_factory=lambda : Index.query.all(),
+            get_pk=lambda index : index.id,
+            get_label=lambda index : index.index_name),
+        update_style=dict(
+            choices=[(0, 'Difference'), (1, 'Bulk')]))
+
 
 
 harvest_admin_view = dict(
