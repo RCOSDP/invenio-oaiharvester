@@ -54,7 +54,7 @@ class HarvestSettingView(ModelView):
     #         choices=[(0, 'Difference'), (1, 'Bulk')]))
     form_base_class = FlaskForm
     form_columns = (
-        'repository_name', 'base_url', 'deleted', 'from_date',
+        'repository_name', 'base_url', 'from_date',
         'until_date', 'set_spec', 'metadata_prefix', 'target_index',
         'update_style', 'auto_distribution'
     )
