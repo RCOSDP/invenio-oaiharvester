@@ -70,6 +70,7 @@ class HarvestSettings(db.Model):
     until_date = db.Column(db.Date, nullable=True)
     set_spec = db.Column(db.String(255), nullable=True)
     metadata_prefix = db.Column(db.String(255), nullable=False)
+
     index_id = db.Column(
         db.BigInteger,
         db.ForeignKey(Index.id),
