@@ -38,8 +38,8 @@
       <file leaf-file-name="models.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="279">
-              <caret line="73" column="56" lean-forward="false" selection-start-line="73" selection-start-column="56" selection-end-line="73" selection-end-column="56" />
+            <state relative-caret-position="263">
+              <caret line="78" column="75" lean-forward="true" selection-start-line="78" selection-start-column="75" selection-end-line="78" selection-end-column="75" />
               <folding>
                 <element signature="e#839#893#0" expanded="true" />
               </folding>
@@ -200,8 +200,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="279">
-          <caret line="73" column="56" lean-forward="false" selection-start-line="73" selection-start-column="56" selection-end-line="73" selection-end-column="56" />
+        <state relative-caret-position="263">
+          <caret line="78" column="75" lean-forward="true" selection-start-line="78" selection-start-column="75" selection-end-line="78" selection-end-column="75" />
           <folding>
             <element signature="e#839#893#0" expanded="true" />
           </folding>
