@@ -55,9 +55,21 @@ class HarvestSettingView(ModelView):
     form_base_class = FlaskForm
     form_columns = (
         'repository_name', 'base_url', 'from_date',
-        'until_date', 'set_spec', 'metadata_prefix', 'target_index',
+        'until_date', 'set_spec', 'metadata_prefix', 'index',
         'update_style', 'auto_distribution'
     )
+    column_list = (
+        'repository_name',
+        'base_url',
+        'from_date',
+        'until_date',
+        'set_spec',
+        'metadata_prefix',
+        'index.index_name',
+        'update_style',
+        'auto_distribution',
+    )
+
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
