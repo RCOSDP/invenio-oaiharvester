@@ -70,23 +70,21 @@ class HarvestSettings(db.Model):
     until_date = db.Column(db.Date, nullable=True)
     set_spec = db.Column(db.String(255), nullable=True)
     metadata_prefix = db.Column(db.String(255), nullable=False)
-    index_id = db.Column(
+    # index_id = db.Column(
+    #     db.BigInteger,
+    #     db.ForeignKey(Index.id),
+    #     nullable=False
+    # )
+    # target_index = db.relationship(Index, backref='target_index', foreign_keys=[index_id])
+    target_index = db.Column(
         db.BigInteger,
         db.ForeignKey(Index.id),
         nullable=False
     )
-    target_index = db.relationship(Index, backref='target_index', foreign_keys=[index_id])
-    # target_index = db.Column(db.Integer, nullable=False)
-    # update_style = db.Column(db.Integer,
-    #     nullable=False,
-    #     default=UpdateStyle.Difference)
+
     update_style = db.Column(
         db.String(1), nullable=False,
         default=lambda: current_app.config['OAIHARVESTER_DEFAULT_UPDATE_STYLE'])
-
-    # auto_distribution = db.Column(db.Boolean(name='auto_distribution'),
-    #     nullable=False,
-    #     default=False)
 
     auto_distribution = db.Column(
         db.String(1), nullable=False,

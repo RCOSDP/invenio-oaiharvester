@@ -65,7 +65,7 @@ class HarvestSettingView(ModelView):
         'until_date',
         'set_spec',
         'metadata_prefix',
-        'target_index.index_name',
+        # 'target_index.index_name',
         'update_style',
         'auto_distribution',
     )
