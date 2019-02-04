@@ -27,6 +27,8 @@ from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_babelex import gettext as _
+from flask_wtf import FlaskForm
+from invenio_admin.forms import LazyChoices
 from wtforms.fields import RadioField
 from weko_index_tree.models import Index
 from .models import HarvestSettings
@@ -40,16 +42,24 @@ class HarvestSettingView(ModelView):
     can_edit = True
     can_view_details = True
     page_size = 25
-    form_overrides = dict(
-        target_index=QuerySelectField,
-        update_style=RadioField)
-    form_args = dict(
-        target_index=dict(
-            query_factory=lambda : Index.query.all(),
-            get_pk=lambda index : index.id,
-            get_label=lambda index : index.index_name),
-        update_style=dict(
-            choices=[(0, 'Difference'), (1, 'Bulk')]))
+    # form_overrides = dict(
+    #     target_index=QuerySelectField,
+    #     update_style=RadioField)
+    # form_args = dict(
+    #     target_index=dict(
+    #         query_factory=lambda : Index.query.all(),
+    #         get_pk=lambda index : index.id,
+    #         get_label=lambda index : index.index_name),
+    #     update_style=dict(
+    #         choices=[(0, 'Difference'), (1, 'Bulk')]))
+    form_base_class = FlaskForm
+    form_columns = (
+        'repository_name', 'base_url', 'deleted', 'from_date',
+        'until_date', 'set_spec', 'metadata_prefix', 'target_index',
+        'update_style', 'auto_distribution'
+    )
+    form_choices = dict(
+        update_style=RadioField('Style', choices=[('0','Difference'),('1','Bulk')]))
 
 
 
