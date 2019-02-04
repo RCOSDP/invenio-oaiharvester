@@ -58,8 +58,11 @@ class HarvestSettingView(ModelView):
         'until_date', 'set_spec', 'metadata_prefix', 'target_index',
         'update_style', 'auto_distribution'
     )
+    # form_choices = dict(
+    #     update_style=RadioField('Style', choices=[('0','Difference'),('1','Bulk')]))
     form_choices = dict(
-        update_style=RadioField('Style', choices=[('0','Difference'),('1','Bulk')]))
+        update_style=LazyChoices(lambda: current_app.config[
+            'FILES_REST_STORAGE_CLASS_LIST'].items()))
 
 
 
