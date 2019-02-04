@@ -59,11 +59,12 @@ class HarvestSettingView(ModelView):
         'update_style', 'auto_distribution'
     )
     form_overrides = dict(
-        update_style=RadioField
+        update_style=RadioField('style',
+                   choices=[('0', 'description'), ('1', 'whatever')])
     )
-    form_choices = dict(
-        update_style=[('0', 'Bulk'), ('1', 'Difference')],
-        auto_distribution=[('0', 'Run'), ('1', 'Do not run')])
+    # form_choices = dict(
+    #     update_style=[('0', 'Bulk'), ('1', 'Difference')],
+    #     auto_distribution=[('0', 'Run'), ('1', 'Do not run')])
 
 
 
