@@ -33,8 +33,12 @@ OAIHARVESTER_UPDATE_STYLE_OPTIONS = {
     '0': 'Bulk',
     '1': 'Difference',
 }
+OAIHARVESTER_DEFAULT_UPDATE_STYLE = '0'
+"""Default update style option."""
 
 OAIHARVESTER_AUTO_DISTRIBUTION_OPTIONS = {
     '0': 'Run',
     '1': 'Do not run',
 }
+OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION = '0'
+"""Default auto distribution option."""
