@@ -24,7 +24,7 @@ from __future__ import absolute_import, print_function
 import datetime
 import enum
 from invenio_db import db
-
+from weko_index_tree.models import Index
 
 class OAIHarvestConfig(db.Model):
     """Represents a OAIHarvestConfig record."""
@@ -70,7 +70,7 @@ class HarvestSettings(db.Model):
     until_date = db.Column(db.Date, nullable=True)
     set_spec = db.Column(db.String(255), nullable=True)
     metadata_prefix = db.Column(db.String(255), nullable=False)
-    target_index = db.Column(db.Integer, nullable=False)
+    target_index = db.relationship(Index, backref='index')
     update_style = db.Column(db.Integer,
         nullable=False,
         default=UpdateStyle.Difference)
