@@ -76,7 +76,7 @@ class HarvestSettings(db.Model):
         nullable=False
     )
 
-    index = db.relationship(Index, backref='index', foreign_keys=[node_id])
+    target_index = db.relationship(Index, backref='target_index', foreign_keys=[node_id])
     # target_index = db.Column(db.Integer, nullable=False)
     # update_style = db.Column(db.Integer,
     #     nullable=False,

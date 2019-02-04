@@ -55,7 +55,7 @@ class HarvestSettingView(ModelView):
     form_base_class = FlaskForm
     form_columns = (
         'repository_name', 'base_url', 'from_date',
-        'until_date', 'set_spec', 'metadata_prefix', 'index',
+        'until_date', 'set_spec', 'metadata_prefix', 'target_index',
         'update_style', 'auto_distribution'
     )
     column_list = (
@@ -65,7 +65,7 @@ class HarvestSettingView(ModelView):
         'until_date',
         'set_spec',
         'metadata_prefix',
-        'index.index_name',
+        'target_index.index_name',
         'update_style',
         'auto_distribution',
     )
