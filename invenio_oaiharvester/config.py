@@ -28,3 +28,13 @@ OAIHARVESTER_DEFAULT_NAMESPACE_MAP = {
 
 OAIHARVESTER_WORKDIR = None
 """Path to directory for oaiharvester related files, default: instance_path."""
+
+OAIHARVESTER_UPDATE_STYLE_OPTIONS = {
+    '0': 'Bulk',
+    '1': 'Difference',
+}
+
+OAIHARVESTER_AUTO_DISTRIBUTION_OPTIONS = {
+    '0': 'Run',
+    '1': 'Do not run',
+}
