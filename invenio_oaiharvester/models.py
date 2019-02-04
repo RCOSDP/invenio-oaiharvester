@@ -70,17 +70,12 @@ class HarvestSettings(db.Model):
     until_date = db.Column(db.Date, nullable=True)
     set_spec = db.Column(db.String(255), nullable=True)
     metadata_prefix = db.Column(db.String(255), nullable=False)
-    # index_id = db.Column(
-    #     db.BigInteger,
-    #     db.ForeignKey(Index.id),
-    #     nullable=False
-    # )
-    # target_index = db.relationship(Index, backref='target_index', foreign_keys=[index_id])
-    target_index = db.Column(
+    index_id = db.Column(
         db.BigInteger,
         db.ForeignKey(Index.id),
         nullable=False
     )
+    target_index = db.relationship(Index, backref='target_index', foreign_keys=[index_id])
 
     update_style = db.Column(
         db.String(1), nullable=False,
