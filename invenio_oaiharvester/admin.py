@@ -46,7 +46,11 @@ class HarvestSettingView(ModelView):
     page_size = 25
 
     from .views import blueprint
-    details_template = os.path.join(blueprint.root_path,
+    # details_template = os.path.join(blueprint.root_path,
+    #                                 blueprint.template_folder,
+    #                                 current_app.config['OAIHARVESTER_DETAIL_TEMPLATE'])
+
+    path = os.path.join(blueprint.root_path,
                                     blueprint.template_folder,
                                     current_app.config['OAIHARVESTER_DETAIL_TEMPLATE'])
 
@@ -90,7 +94,7 @@ class HarvestSettingView(ModelView):
         'auto_distribution',
         rules.HTML('<div class="form-group"><div class="col-md-2"></div>'
                    '<div class="col-md-10"><a id="harvesting-btn" '
-                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'),
+                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'+path),
     )
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
