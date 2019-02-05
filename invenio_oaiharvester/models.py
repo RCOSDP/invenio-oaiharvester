@@ -68,8 +68,7 @@ class HarvestSettings(db.Model):
     base_url = db.Column(db.String(255), nullable=False)
     from_date = db.Column(db.Date, nullable=True)
     until_date = db.Column(db.Date, nullable=True)
-    # set_spec = db.Column(db.String(255), nullable=True)
-    set_spec = db.Column(db.Date, nullable=True)
+    set_spec = db.Column(db.String(255), nullable=True)
 
     metadata_prefix = db.Column(db.String(255), nullable=False)
 
