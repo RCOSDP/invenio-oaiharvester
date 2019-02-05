@@ -94,7 +94,7 @@ class HarvestSettingView(ModelView):
         'auto_distribution',
         rules.HTML('<div class="form-group"><div class="col-md-2"></div>'
                    '<div class="col-md-10"><a id="harvesting-btn" '
-                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'+path),
+                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'),
     )
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
