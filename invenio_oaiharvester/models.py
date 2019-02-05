@@ -87,5 +87,7 @@ class HarvestSettings(db.Model):
         db.String(1), nullable=False,
         default=lambda: current_app.config['OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION'])
 
+    newField = db.Column(db.String(255), nullable=False)
+
 __all__ = ('OAIHarvestConfig',
            'HarvestSettings')
