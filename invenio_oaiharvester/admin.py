@@ -46,9 +46,7 @@ class HarvestSettingView(ModelView):
     page_size = 25
 
     from .views import blueprint
-    # details_template = os.path.join(blueprint.root_path,
-    #                                 blueprint.template_folder,
-    #                                 current_app.config['OAIHARVESTER_DETAIL_TEMPLATE'])
+    details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
 
     # path = os.path.join(blueprint.root_path,
     #                                 blueprint.template_folder,
