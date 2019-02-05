@@ -22,7 +22,7 @@
 
 import sys
 
-from flask import abort, current_app, flash, request
+from flask import abort, current_app, flash, request, app
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
@@ -43,7 +43,9 @@ class HarvestSettingView(ModelView):
     can_edit = True
     can_view_details = True
     page_size = 25
-    details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
+
+    with app.app_context():
+        details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
     #     target_index=QuerySelectField,
     #     update_style=RadioField)
