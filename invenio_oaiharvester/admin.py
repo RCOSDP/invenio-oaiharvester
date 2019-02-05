@@ -43,6 +43,7 @@ class HarvestSettingView(ModelView):
     can_edit = True
     can_view_details = True
     page_size = 25
+    details_template = 'admin/details.html'
     # form_overrides = dict(
     #     target_index=QuerySelectField,
     #     update_style=RadioField)
