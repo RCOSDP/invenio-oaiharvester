@@ -81,8 +81,8 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
         rules.HTML('<div class="form-group"><div class="col-md-2"></div>'
-                   '<div class="col-md-10"><button id="harvesting-btn" '
-                   'class="btn btn-primary">Harvesting</button></div></div>'),
+                   '<div class="col-md-10"><a id="harvesting-btn" '
+                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'),
     )
     # form_overrides = dict(newField=SubmitField)
     # form_args = dict(
