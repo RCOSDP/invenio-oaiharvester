@@ -57,7 +57,7 @@ class HarvestSettingView(ModelView):
     form_columns = (
         'repository_name', 'base_url', 'from_date',
         'until_date', 'set_spec', 'metadata_prefix', 'target_index',
-        'update_style', 'auto_distribution', 'newField'
+        'update_style', 'auto_distribution'
     )
     column_list = (
         'repository_name',
