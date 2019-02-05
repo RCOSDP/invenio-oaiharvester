@@ -69,6 +69,7 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
+    form_overrides = dict(update_style=RadioField)
 
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
