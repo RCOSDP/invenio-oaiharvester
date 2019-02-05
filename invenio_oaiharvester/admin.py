@@ -48,7 +48,7 @@ class HarvestSettingView(ModelView):
     from .views import blueprint
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
 
-    path = os.path.join(blueprint.root_path,
+    details_template = os.path.join(blueprint.root_path,
                                     blueprint.template_folder,
                                     'admin/details.html')
 
