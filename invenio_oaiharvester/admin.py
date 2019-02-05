@@ -22,6 +22,7 @@
 
 import sys
 
+import os
 from flask import abort, current_app, flash, request, app
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
@@ -44,8 +45,13 @@ class HarvestSettingView(ModelView):
     can_view_details = True
     page_size = 25
 
-    with app.app_context():
-        details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
+    # from .views import blueprint
+    #
+    # os.path.join(blueprint.root_path,
+    #              blueprint.template_folder,
+    #              current_app.config['THEME_HEADER_WYSIWYG_TEMPLATE'])
+
+    details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
     #     target_index=QuerySelectField,
     #     update_style=RadioField)
