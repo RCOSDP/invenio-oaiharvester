@@ -30,6 +30,7 @@ from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_admin.form import rules
 from flask_babelex import gettext as _
 from flask_wtf import FlaskForm
+from markupsafe import Markup
 from invenio_admin.forms import LazyChoices
 from wtforms.fields import RadioField, SubmitField
 from weko_index_tree.models import Index
@@ -38,6 +39,16 @@ from .models import HarvestSettings
 def _(x):
     return x
 
+def link(text, link_func):
+    return Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>')
+    #
+    # """Generate a object formatter for links.."""
+    # def object_formatter(v, c, m, p):
+    #     """Format object view link."""
+    #     return Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>'.format(
+    #         link_func(m), text))
+    # return object_formatter
+
 class HarvestSettingView(ModelView):
     can_create = True
     can_delete = True
@@ -45,12 +56,16 @@ class HarvestSettingView(ModelView):
     can_view_details = True
     page_size = 25
 
-    from .views import blueprint
-    # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
+    # from .views import blueprint
+    # # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
+    #
+    # details_template = os.path.join(blueprint.root_path,
+    #                                 blueprint.template_folder,
+    #                                 'admin/harvest_details.html')
 
-    details_template = os.path.join(blueprint.root_path,
-                                    blueprint.template_folder,
-                                    'admin/harvest_details.html')
+    column_formatters = dict(
+        Harvesting=Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>'),
+    )
 
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
