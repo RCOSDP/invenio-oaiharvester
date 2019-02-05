@@ -26,7 +26,7 @@ from flask import abort, current_app, flash, request
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
-from flask_admin.form.rules import HTML
+from flask_admin.form import rules
 from flask_babelex import gettext as _
 from flask_wtf import FlaskForm
 from invenio_admin.forms import LazyChoices
@@ -70,8 +70,18 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    # form_edit_rules = (HTML('<button>Refresh</button>')
-    # )
+    form_create_rules = (
+        'repository_name',
+        'base_url',
+        'from_date',
+        'until_date',
+        'set_spec',
+        'metadata_prefix',
+        'target_index.index_name',
+        'update_style',
+        'auto_distribution',
+        rules.HTML('<button>Refresh</button>'),
+    )
     # form_overrides = dict(newField=SubmitField)
     # form_args = dict(
     #     newField=dict(
