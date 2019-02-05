@@ -45,13 +45,12 @@ class HarvestSettingView(ModelView):
     can_view_details = True
     page_size = 25
 
-    # from .views import blueprint
-    #
-    # os.path.join(blueprint.root_path,
-    #              blueprint.template_folder,
-    #              current_app.config['THEME_HEADER_WYSIWYG_TEMPLATE'])
+    from .views import blueprint
+    details_template = os.path.join(blueprint.root_path,
+                                    blueprint.template_folder,
+                                    current_app.config['OAIHARVESTER_DETAIL_TEMPLATE'])
 
-    details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
+    # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
     #     target_index=QuerySelectField,
     #     update_style=RadioField)
