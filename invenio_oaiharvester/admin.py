@@ -84,11 +84,6 @@ class HarvestSettingView(ModelView):
                    '<div class="col-md-10"><a id="harvesting-btn" '
                    'class="btn btn-primary" href="#">Harvesting</a></div></div>'),
     )
-    # form_overrides = dict(newField=SubmitField)
-    # form_args = dict(
-    #     newField=dict(
-    #         choices=[(0, 'waiting'), (1, 'in_progress'), (2, 'finished')]
-    #     ))
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
