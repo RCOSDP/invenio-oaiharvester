@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="753ff6cb-2ee1-46b3-b757-3520e81ed1d3" name="Default" comment="">
-      <change beforePath="$PROJECT_DIR$/invenio_oaiharvester/admin.py" afterPath="$PROJECT_DIR$/invenio_oaiharvester/admin.py" />
+      <change beforePath="$PROJECT_DIR$/invenio_oaiharvester/models.py" afterPath="$PROJECT_DIR$/invenio_oaiharvester/models.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -13,7 +13,7 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="admin.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="admin.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="249">
@@ -35,11 +35,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="models.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="models.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="551">
-              <caret line="89" column="12" lean-forward="false" selection-start-line="89" selection-start-column="12" selection-end-line="89" selection-end-column="12" />
+            <state relative-caret-position="398">
+              <caret line="89" column="0" lean-forward="false" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
               <folding>
                 <element signature="e#839#893#0" expanded="true" />
               </folding>
@@ -62,8 +62,8 @@
     <option name="CHANGED_PATHS">
       <list>
         <option value="$PROJECT_DIR$/invenio_oaiharvester/config.py" />
-        <option value="$PROJECT_DIR$/invenio_oaiharvester/models.py" />
         <option value="$PROJECT_DIR$/invenio_oaiharvester/admin.py" />
+        <option value="$PROJECT_DIR$/invenio_oaiharvester/models.py" />
       </list>
     </option>
   </component>
@@ -189,22 +189,22 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="551">
-          <caret line="89" column="12" lean-forward="false" selection-start-line="89" selection-start-column="12" selection-end-line="89" selection-end-column="12" />
-          <folding>
-            <element signature="e#839#893#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="249">
           <caret line="72" column="55" lean-forward="false" selection-start-line="72" selection-start-column="55" selection-end-line="72" selection-end-column="55" />
           <folding>
             <element signature="e#827#837#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="398">
+          <caret line="89" column="0" lean-forward="false" selection-start-line="89" selection-start-column="0" selection-end-line="89" selection-end-column="0" />
+          <folding>
+            <element signature="e#839#893#0" expanded="true" />
           </folding>
         </state>
       </provider>
