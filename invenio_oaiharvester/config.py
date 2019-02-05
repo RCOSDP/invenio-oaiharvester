@@ -44,4 +44,4 @@ OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION = '0'
 """Default auto distribution option."""
 
 # TODO
-OAIHARVESTER_DETAIL_TEMPLATE = 'weko_admin/details.html'
+OAIHARVESTER_DETAIL_TEMPLATE = 'templates/admin/details.html'
