@@ -66,6 +66,18 @@ class HarvestSettingView(ModelView):
     column_formatters = dict(
         Harvesting=Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>'),
     )
+    column_details_list = (
+        'repository_name',
+        'base_url',
+        'from_date',
+        'until_date',
+        'set_spec',
+        'metadata_prefix',
+        'target_index.index_name',
+        'update_style',
+        'auto_distribution',
+        'Harvesting'
+    )
 
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
