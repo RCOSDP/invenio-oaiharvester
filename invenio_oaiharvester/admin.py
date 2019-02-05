@@ -69,15 +69,10 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    form_overrides = dict(update_style=RadioField)
-    form_args = dict(
-        # Pass the choices to the `SelectField`
-        update_style=dict(
-            choices=[(0, 'waiting'), (1, 'in_progress'), (2, 'finished')]
-        ))
+
     form_choices = dict(
-        # update_style=LazyChoices(lambda: current_app.config[
-        #     'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
+        update_style=LazyChoices(lambda: current_app.config[
+            'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
         auto_distribution=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_AUTO_DISTRIBUTION_OPTIONS'].items()))
 
