@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="753ff6cb-2ee1-46b3-b757-3520e81ed1d3" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/invenio_oaiharvester/admin.py" afterPath="$PROJECT_DIR$/invenio_oaiharvester/admin.py" />
+      <change beforePath="$PROJECT_DIR$/invenio_oaiharvester/config.py" afterPath="$PROJECT_DIR$/invenio_oaiharvester/config.py" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -17,7 +18,7 @@
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="334">
-              <caret line="45" column="79" lean-forward="true" selection-start-line="45" selection-start-column="79" selection-end-line="45" selection-end-column="79" />
+              <caret line="45" column="73" lean-forward="true" selection-start-line="45" selection-start-column="73" selection-end-line="45" selection-end-column="73" />
               <folding>
                 <element signature="e#827#837#0" expanded="true" />
               </folding>
@@ -28,8 +29,8 @@
       <file leaf-file-name="config.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="245">
-              <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
+            <state relative-caret-position="466">
+              <caret line="46" column="28" lean-forward="false" selection-start-line="46" selection-start-column="0" selection-end-line="46" selection-end-column="28" />
               <folding />
             </state>
           </provider>
@@ -61,9 +62,9 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/invenio_oaiharvester/config.py" />
         <option value="$PROJECT_DIR$/invenio_oaiharvester/models.py" />
         <option value="$PROJECT_DIR$/invenio_oaiharvester/views.py" />
+        <option value="$PROJECT_DIR$/invenio_oaiharvester/config.py" />
         <option value="$PROJECT_DIR$/invenio_oaiharvester/admin.py" />
       </list>
     </option>
@@ -227,14 +228,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="245">
-          <caret line="30" column="0" lean-forward="false" selection-start-line="30" selection-start-column="0" selection-end-line="30" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/models.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="415">
@@ -245,10 +238,18 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="466">
+          <caret line="46" column="28" lean-forward="false" selection-start-line="46" selection-start-column="0" selection-end-line="46" selection-end-column="28" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="334">
-          <caret line="45" column="79" lean-forward="true" selection-start-line="45" selection-start-column="79" selection-end-line="45" selection-end-column="79" />
+          <caret line="45" column="73" lean-forward="true" selection-start-line="45" selection-start-column="73" selection-end-line="45" selection-end-column="73" />
           <folding>
             <element signature="e#827#837#0" expanded="true" />
           </folding>
