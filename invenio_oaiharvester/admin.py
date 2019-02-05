@@ -29,7 +29,7 @@ from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_babelex import gettext as _
 from flask_wtf import FlaskForm
 from invenio_admin.forms import LazyChoices
-from wtforms.fields import RadioField
+from wtforms.fields import RadioField, SubmitField
 from weko_index_tree.models import Index
 from .models import HarvestSettings
 
@@ -69,7 +69,7 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    form_overrides = dict(newField=RadioField)
+    form_overrides = dict(newField=SubmitField)
     form_args = dict(
         # Pass the choices to the `SelectField`
         newField=dict(
