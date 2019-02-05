@@ -80,7 +80,7 @@ class HarvestSettingView(ModelView):
         'target_index',
         'update_style',
         'auto_distribution',
-        rules.HTML('<button>Refresh</button>'),
+        rules.HTML('<div class="form-group"><button id="harvesting-btn" class="col-md-offset-2 btn btn-primary">Run</button></div>'),
     )
     # form_overrides = dict(newField=SubmitField)
     # form_args = dict(
