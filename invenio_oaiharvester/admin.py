@@ -26,6 +26,7 @@ from flask import abort, current_app, flash, request
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.form.rules import HTML
 from flask_babelex import gettext as _
 from flask_wtf import FlaskForm
 from invenio_admin.forms import LazyChoices
@@ -69,12 +70,13 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    form_overrides = dict(newField=SubmitField)
-    form_args = dict(
-        # Pass the choices to the `SelectField`
-        newField=dict(
-            choices=[(0, 'waiting'), (1, 'in_progress'), (2, 'finished')]
-        ))
+    form_edit_rules = (HTML('<button>Refresh</button>')
+    )
+    # form_overrides = dict(newField=SubmitField)
+    # form_args = dict(
+    #     newField=dict(
+    #         choices=[(0, 'waiting'), (1, 'in_progress'), (2, 'finished')]
+    #     ))
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
