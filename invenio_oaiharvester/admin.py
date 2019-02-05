@@ -70,8 +70,8 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    form_edit_rules = (HTML('<button>Refresh</button>')
-    )
+    # form_edit_rules = (HTML('<button>Refresh</button>')
+    # )
     # form_overrides = dict(newField=SubmitField)
     # form_args = dict(
     #     newField=dict(
