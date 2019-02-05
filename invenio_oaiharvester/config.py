@@ -44,4 +44,4 @@ OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION = '0'
 """Default auto distribution option."""
 
 # TODO
-OAIHARVESTER_DETAIL_TEMPLATE = 'admin/details.html'
+OAIHARVESTER_DETAIL_TEMPLATE = 'admin/harvest_details.html'

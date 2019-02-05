@@ -50,7 +50,7 @@ class HarvestSettingView(ModelView):
 
     details_template = os.path.join(blueprint.root_path,
                                     blueprint.template_folder,
-                                    'templates/admin/harvest_details.html')
+                                    'admin/harvest_details.html')
 
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
