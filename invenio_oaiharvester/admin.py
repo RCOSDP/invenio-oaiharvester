@@ -61,23 +61,23 @@ class HarvestSettingView(ModelView):
     #                                 blueprint.template_folder,
     #                                 'admin/harvest_details.html')
 
-    # column_formatters = dict(
-    #     Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
-    #     Harvesting=link('Objects', '#'),
-    #
-    # )
-    # column_details_list = (
-    #     'repository_name',
-    #     'base_url',
-    #     'from_date',
-    #     'until_date',
-    #     'set_spec',
-    #     'metadata_prefix',
-    #     'target_index.index_name',
-    #     'update_style',
-    #     'auto_distribution',
-    #     'Harvesting',
-    # )
+    column_formatters = dict(
+        # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
+        Harvesting=link('Objects', '#'),
+
+    )
+    column_details_list = (
+        'repository_name',
+        'base_url',
+        'from_date',
+        'until_date',
+        'set_spec',
+        'metadata_prefix',
+        'target_index.index_name',
+        'update_style',
+        'auto_distribution',
+        'Harvesting',
+    )
 
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
     # form_overrides = dict(
