@@ -16,8 +16,8 @@
       <file leaf-file-name="admin.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="187">
-              <caret line="46" column="70" lean-forward="true" selection-start-line="46" selection-start-column="70" selection-end-line="46" selection-end-column="70" />
+            <state relative-caret-position="249">
+              <caret line="66" column="0" lean-forward="true" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
               <folding>
                 <element signature="e#827#837#0" expanded="true" />
               </folding>
@@ -115,8 +115,8 @@
     <findStrings>
       <find>RadioField</find>
       <find>community</find>
-      <find>harvestsettings</find>
       <find>index_view</find>
+      <find>harvestsettings</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -346,8 +346,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/invenio_oaiharvester/admin.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="187">
-          <caret line="46" column="70" lean-forward="true" selection-start-line="46" selection-start-column="70" selection-end-line="46" selection-end-column="70" />
+        <state relative-caret-position="249">
+          <caret line="66" column="0" lean-forward="true" selection-start-line="66" selection-start-column="0" selection-end-line="66" selection-end-column="0" />
           <folding>
             <element signature="e#827#837#0" expanded="true" />
           </folding>

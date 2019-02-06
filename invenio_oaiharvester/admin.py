@@ -99,20 +99,6 @@ class HarvestSettingView(ModelView):
         'update_style',
         'auto_distribution',
     )
-    form_create_rules = (
-        'repository_name',
-        'base_url',
-        'from_date',
-        'until_date',
-        'set_spec',
-        'metadata_prefix',
-        'target_index',
-        'update_style',
-        'auto_distribution',
-        rules.HTML('<div class="form-group"><div class="col-md-2"></div>'
-                   '<div class="col-md-10"><a id="harvesting-btn" '
-                   'class="btn btn-primary" href="#">Harvesting</a></div></div>'),
-    )
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
