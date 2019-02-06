@@ -20,7 +20,7 @@
 
 """Blueprint for weko-deposit."""
 
-from flask import Blueprint
+from flask import Blueprint, render_template, current_app
 
 blueprint = Blueprint(
     'invenio_oaiharvester',
@@ -28,3 +28,9 @@ blueprint = Blueprint(
     template_folder='templates',
     static_folder='static',
 )
+
+@blueprint.route('/')
+def index():
+    """Simplistic front page view."""
+    return render_template(
+        current_app.config['OAIHARVESTER_DETAIL_TEMPLATE'])
