@@ -40,14 +40,12 @@ def _(x):
     return x
 
 def link(text, link_func):
-    return Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>')
-    #
-    # """Generate a object formatter for links.."""
-    # def object_formatter(v, c, m, p):
-    #     """Format object view link."""
-    #     return Markup('<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>'.format(
-    #         link_func(m), text))
-    # return object_formatter
+    """Generate a object formatter for links.."""
+    def object_formatter(v, c, m, p):
+        """Format object view link."""
+        return Markup('<a href="{0}">{1}</a>'.format(
+            link_func(m), text))
+    return object_formatter
 
 class HarvestSettingView(ModelView):
     can_create = True
@@ -64,7 +62,9 @@ class HarvestSettingView(ModelView):
     #                                 'admin/harvest_details.html')
 
     column_formatters = dict(
-        Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
+        # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
+        Harvesting=link('Objects', '#'),
+
     )
     column_details_list = (
         'repository_name',
