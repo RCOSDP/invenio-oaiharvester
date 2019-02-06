@@ -43,7 +43,7 @@ def link(text, link_func):
     """Generate a object formatter for links.."""
     def object_formatter(v, c, m, p):
         """Format object view link."""
-        return Markup('<a id="harvesting-btn" class="btn btn-primary" '
+        return Markup('<a id="hvt-btn" class="btn btn-primary" '
                       'href="{0}">{1}</a>'.format(link_func(m), text))
     return object_formatter
 

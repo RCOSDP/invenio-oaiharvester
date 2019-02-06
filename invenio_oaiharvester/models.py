@@ -52,9 +52,6 @@ class OAIHarvestConfig(db.Model):
         self.lastrun = new_date or datetime.datetime.now()
 
 
-
-
-
 class HarvestSettings(db.Model):
     """Harvest Settings"""
     class UpdateStyle(enum.IntEnum):
