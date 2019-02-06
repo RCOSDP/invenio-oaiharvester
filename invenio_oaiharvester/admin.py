@@ -76,7 +76,7 @@ class HarvestSettingView(ModelView):
         'target_index.index_name',
         'update_style',
         'auto_distribution',
-        'Harvesting',
+        # 'Harvesting',
     )
 
     # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
