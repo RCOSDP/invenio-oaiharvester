@@ -65,7 +65,7 @@ class HarvestSettingView(ModelView):
         # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
         # Harvesting=link('Objects', '#'),
         Harvesting=link('Harvesting', lambda o: url_for(
-            'HarvestSettings.index_view')),
+            'harvestsettings.index_view')),
 
     )
     column_details_list = (
