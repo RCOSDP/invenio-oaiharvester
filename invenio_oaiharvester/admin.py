@@ -23,7 +23,7 @@
 import sys
 
 import os
-from flask import abort, current_app, flash, request, app
+from flask import abort, current_app, flash, request, app, url_for
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
@@ -63,7 +63,9 @@ class HarvestSettingView(ModelView):
 
     column_formatters = dict(
         # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
-        Harvesting=link('Objects', '#'),
+        # Harvesting=link('Objects', '#'),
+        Harvesting=link('Harvesting', lambda o: url_for(
+            '#', flt0_0=o.id, flt1_37=1, sort=1)),
 
     )
     column_details_list = (
