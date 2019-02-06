@@ -61,11 +61,11 @@ class HarvestSettingView(ModelView):
     #                                 blueprint.template_folder,
     #                                 'admin/harvest_details.html')
 
-    column_formatters = dict(
-        # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
-        Harvesting=link('Objects', '#'),
-
-    )
+    # column_formatters = dict(
+    #     Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
+    #     Harvesting=link('Objects', '#'),
+    #
+    # )
     column_details_list = (
         'repository_name',
         'base_url',
