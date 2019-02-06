@@ -43,8 +43,8 @@ def link(text, link_func):
     """Generate a object formatter for links.."""
     def object_formatter(v, c, m, p):
         """Format object view link."""
-        return Markup('<a id="harvesting-btn" class="btn btn-primary" href="{0}">{1}</a>'.format(
-            link_func(m), text))
+        return Markup('<a id="harvesting-btn" class="btn btn-primary" '
+                      'href="{0}">{1}</a>'.format(link_func(m), text))
     return object_formatter
 
 class HarvestSettingView(ModelView):
@@ -54,19 +54,20 @@ class HarvestSettingView(ModelView):
     can_view_details = True
     page_size = 25
 
-    # from .views import blueprint
-    # # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
-    #
-    # details_template = os.path.join(blueprint.root_path,
-    #                                 blueprint.template_folder,
-    #                                 'admin/harvest_details.html')
+    # form_overrides = dict(
+    #     target_index=QuerySelectField,
+    #     update_style=RadioField)
+    # form_args = dict(
+    #     target_index=dict(
+    #         query_factory=lambda : Index.query.all(),
+    #         get_pk=lambda index : index.id,
+    #         get_label=lambda index : index.index_name),
+    #     update_style=dict(
+    #         choices=[(0, 'Difference'), (1, 'Bulk')]))
 
     column_formatters = dict(
-        # Harvesting='<a id="harvesting-btn" class="btn btn-primary" href="#">Run</a>',
-        # Harvesting=link('Objects', '#'),
-        Harvesting=link('Harvesting', lambda o: url_for(
+        Harvesting=link('Run', lambda o: url_for(
             'harvestsettings.index_view')),
-
     )
     column_details_list = (
         'repository_name',
@@ -81,17 +82,6 @@ class HarvestSettingView(ModelView):
         'Harvesting',
     )
 
-    # details_template = current_app.config['OAIHARVESTER_DETAIL_TEMPLATE']
-    # form_overrides = dict(
-    #     target_index=QuerySelectField,
-    #     update_style=RadioField)
-    # form_args = dict(
-    #     target_index=dict(
-    #         query_factory=lambda : Index.query.all(),
-    #         get_pk=lambda index : index.id,
-    #         get_label=lambda index : index.index_name),
-    #     update_style=dict(
-    #         choices=[(0, 'Difference'), (1, 'Bulk')]))
     form_base_class = FlaskForm
     form_columns = (
         'repository_name', 'base_url', 'from_date',
