@@ -67,7 +67,7 @@ class HarvestSettingView(ModelView):
 
     column_formatters = dict(
         Harvesting=link('Run', lambda o: url_for(
-            'indextree.index')),
+            'harvestsettings.index_view')),
     )
     column_details_list = (
         'repository_name',
