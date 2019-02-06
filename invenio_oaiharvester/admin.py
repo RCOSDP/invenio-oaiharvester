@@ -70,34 +70,21 @@ class HarvestSettingView(ModelView):
             'harvestsettings.index_view')),
     )
     column_details_list = (
-        'repository_name',
-        'base_url',
-        'from_date',
-        'until_date',
-        'set_spec',
-        'metadata_prefix',
-        'target_index.index_name',
-        'update_style',
-        'auto_distribution',
-        'Harvesting',
+        'repository_name', 'base_url', 'from_date', 'until_date',
+        'set_spec', 'metadata_prefix', 'target_index.index_name',
+        'update_style', 'auto_distribution', 'Harvesting',
     )
 
     form_base_class = FlaskForm
     form_columns = (
-        'repository_name', 'base_url', 'from_date',
-        'until_date', 'set_spec', 'metadata_prefix', 'target_index',
+        'repository_name', 'base_url', 'from_date', 'until_date',
+        'set_spec', 'metadata_prefix', 'target_index',
         'update_style', 'auto_distribution'
     )
     column_list = (
-        'repository_name',
-        'base_url',
-        'from_date',
-        'until_date',
-        'set_spec',
-        'metadata_prefix',
-        'target_index.index_name',
-        'update_style',
-        'auto_distribution',
+        'repository_name', 'base_url', 'from_date', 'until_date',
+        'set_spec', 'metadata_prefix', 'target_index.index_name',
+        'update_style', 'auto_distribution',
     )
     form_choices = dict(
         update_style=LazyChoices(lambda: current_app.config[
