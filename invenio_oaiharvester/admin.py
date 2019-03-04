@@ -23,7 +23,7 @@
 import sys
 
 import os
-from flask import abort, current_app, flash, request, app, url_for
+from flask import abort, current_app, flash, request, app, url_for, Blueprint
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
@@ -46,6 +46,7 @@ def link(text, link_func):
         return Markup('<a id="hvt-btn" class="btn btn-primary" '
                       'href="{0}">{1}</a>'.format(link_func(m), text))
     return object_formatter
+
 
 class HarvestSettingView(ModelView):
     can_create = True
@@ -91,7 +92,15 @@ class HarvestSettingView(ModelView):
             'OAIHARVESTER_UPDATE_STYLE_OPTIONS'].items()),
         auto_distribution=LazyChoices(lambda: current_app.config[
             'OAIHARVESTER_AUTO_DISTRIBUTION_OPTIONS'].items()))
+    edit_template = 'admin/harvesting_edit.html'
+    create_template = 'admin/harvesting_create.html'
 
+admin_blueprint = Blueprint(
+    'harvesting_admin',
+    __name__,
+    template_folder='templates',
+    static_folder='static',
+)
 
 harvest_admin_view = dict(
     modelview=HarvestSettingView,

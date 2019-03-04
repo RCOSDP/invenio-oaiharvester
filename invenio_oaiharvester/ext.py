@@ -28,6 +28,7 @@ from __future__ import absolute_import, print_function
 
 from . import config
 from .cli import oaiharvester as oaiharvester_cmd
+from .admin import admin_blueprint
 
 class InvenioOAIHarvester(object):
     """Invenio-OAIHarvester extension."""
@@ -41,6 +42,7 @@ class InvenioOAIHarvester(object):
         """Flask application initialization."""
         self.init_config(app)
         app.cli.add_command(oaiharvester_cmd)
+        app.register_blueprint(admin_blueprint)
         app.extensions['invenio-oaiharvester'] = self
 
     def init_config(self, app):
