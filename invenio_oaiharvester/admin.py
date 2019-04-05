@@ -24,6 +24,7 @@ import sys
 
 import os
 from flask import abort, current_app, flash, request, app, url_for
+from flask import flash, redirect
 from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import QuerySelectField
@@ -35,6 +36,8 @@ from invenio_admin.forms import LazyChoices
 from wtforms.fields import RadioField, SubmitField
 from weko_index_tree.models import Index
 from .models import HarvestSettings
+#from .tasks import run_harvesting
+
 
 def _(x):
     return x
@@ -44,10 +47,22 @@ def link(text, link_func):
     def object_formatter(v, c, m, p):
         """Format object view link."""
         return Markup('<a id="hvt-btn" class="btn btn-primary" '
-                      'href="{0}">{1}</a>'.format(link_func(m), text))
+                      'href="{0}?id={2}">{1}</a>'.format(link_func(m), text,
+                                                          m.id))
     return object_formatter
 
+
+
 class HarvestSettingView(ModelView):
+    @expose('/harvesting/')
+    def harvesting(self):
+        from .harvester import run_harvesting
+        run_harvesting(request.args.get('id'))
+#        run_harvesting.delay(request.args.get('id'))
+#        flash('harvesting running')
+        return redirect(url_for('harvestsettings.index_view'))
+
+
     can_create = True
     can_delete = True
     can_edit = True
@@ -67,7 +82,7 @@ class HarvestSettingView(ModelView):
 
     column_formatters = dict(
         Harvesting=link('Run', lambda o: url_for(
-            'harvestsettings.index_view')),
+            'harvestsettings.harvesting')),
     )
     column_details_list = (
         'repository_name', 'base_url', 'from_date', 'until_date',

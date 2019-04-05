@@ -1,0 +1,219 @@
+# -*- coding: utf-8 -*-
+#
+# This file is part of Invenio.
+# Copyright (C) 2015, 2016 CERN.
+#
+# Invenio is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# Invenio is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Invenio; if not, write to the Free Software Foundation, Inc.,
+# 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
+import re
+import requests
+from functools import partial
+from celery import shared_task
+from lxml import etree
+from weko_records.models import ItemType
+from .models import HarvestSettings
+from weko_deposit.api import WekoDeposit
+from invenio_db import db
+
+DEFAULT_FIELD = [
+    'title_en',
+    'title_ja',
+    'keywords',
+    'keywords_en',
+    'pubdate',
+    'lang']
+
+
+def get_records(
+        url=None,
+        from_date=None,
+        until_date=None,
+        metadata_prefix=None,
+        setspecs='*',
+        encoding='utf-8'):
+    payload = {
+        'verb' : 'ListRecords',
+        'from' : from_date,
+        'until' : until_date,
+        'metadataPrefix': metadata_prefix,
+        'set': setspecs}
+    records = []
+    while True:
+        response = requests.get(url, params=payload)
+        et = etree.XML(response.text.encode(encoding))
+        records = records + et.findall('./ListRecords/record', namespaces=et.nsmap)
+        resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
+        if resumptionToken is not None:
+            payload['resumptionToken'] = resumptionToken.text
+        else:
+            break
+    return records
+
+
+def map_field(schema):
+    res = {}
+    for field_name in schema['properties']:
+        if field_name not in DEFAULT_FIELD:
+            res[schema['properties'][field_name]['title']] = field_name
+    return res
+
+
+def get_newest_itemtype_info(type_name):
+    target = None
+    for t in ItemType.query.all():
+        if t.item_type_name.name == type_name:
+            if target == None or target.updated < t.updated:
+                target = t
+    return target
+
+
+def add_identifier(schema, res, identifier, identifier_type=''):
+    identifier_field = map_field(schema)['Identifier']
+    subitems = map_field(schema['properties'][identifier_field]['items'])
+    identifier_item_name = subitems['Identifier']
+    identifier_type_item_name = subitems['Identifier Type']
+    if identifier_field not in res:
+        res[identifier_field] = []
+    res[identifier_field].append({identifier_item_name:identifier, identifier_type_item_name:identifier_type})
+
+
+def add_description(schema, res, description, description_type='', lang=''):
+    description_field = map_field(schema)['Description']
+    subitems = map_field(schema['properties'][description_field]['items'])
+    description_item_name = subitems['Description']
+    description_type_item_name = subitems['Description Type']
+    language_item_name = subitems['Language']
+    if description_field not in res:
+        res[description_field] = []
+    res[description_field].append({
+        description_item_name : description,
+        description_type_item_name:description_type,
+        language_item_name : lang})
+
+
+def add_subject(schema, res, subject, subject_uri='', subject_scheme='', lang=''):
+    subject_field = map_field(schema)['Subject']
+    subitems = map_field(schema['properties'][subject_field]['items'])
+    subject_item_name = subitems['Subject']
+    subject_uri_item_name = subitems['Subject URI']
+    subject_scheme_item_name = subitems['Subject Scheme']
+    language_item_name = subitems['Language']
+    if subject_field not in res:
+        res[subject_field] = []
+    res[subject_field].append({
+        subject_item_name : subject,
+        subject_uri_item_name : subject_uri,
+        subject_scheme_item_name : subject_scheme,
+        language_item_name : lang})
+
+
+def add_title(schema, res, title, lang=''):
+    if 'title_en' not in res:
+        res['title_en'] = title
+    if 'title_ja' not in res:
+        res['title_ja'] = title
+    title_field = map_field(schema)['Title']
+    subitems = map_field(schema['properties'][title_field]['items'])
+    title_item_name = subitems['Title']
+    language_item_name = subitems['Language']
+    if title_field not in res:
+        res[title_field] = []
+    res[title_field].append({title_item_name:title, language_item_name:lang})
+
+
+def add_language(schema, res, lang):
+    if 'lang' not in res:
+        res['lang'] = lang
+    language_field = map_field(schema)['Language']
+    subitems = map_field(schema['properties'][language_field]['items'])
+    language_item_name = subitems['Language']
+    if language_field not in res:
+        res[language_field] = []
+    res[language_field].append({language_item_name:lang})
+
+
+def add_date(schema, res, date, date_type=''):
+    if 'pubdate' not in res:
+        res['pubdate'] = date
+    date_field = map_field(schema)['Date']
+    subitems = map_field(schema['properties'][date_field]['items'])
+    date_item_name = subitems['Date']
+    date_type_item_name = subitems['Date Type']
+    if date_field not in res:
+        res[date_field] = []
+    res[date_field].append({date_item_name:date, date_type_item_name:date_type})
+
+
+def add_publisher(schema, res, publisher, lang=''):
+    publisher_field = map_field(schema)['Publisher']
+    subitems = map_field(schema['properties'][publisher_field]['items'])
+    publisher_item_name = subitems['Publisher']
+    language_item_name = subitems['Language']
+    if publisher_field not in res:
+        res[publisher_field] = []
+    res[publisher_field].append({publisher_item_name:publisher, language_item_name:lang})
+
+
+class BookMapper:
+    def __init__(self, xml):
+        self.xml = xml
+        self.itemtype = get_newest_itemtype_info('Book')
+
+
+    def map(self):
+        res = {'$schema': self.itemtype.id}
+        dc_tags = {
+            'title' : [], 'creator' : [], 'contributor' : [], 'rights' : [],
+            'subject' :[], 'description' :[], 'publisher' : [], 'date' : [],
+            'type' : [], 'format' : [], 'identifier' : [], 'source' : [],
+            'language' : [], 'relation' : [], 'coverage' : []}
+        add_funcs = {
+            'title' : partial(add_title, self.itemtype.schema, res),
+            'subject' : partial(add_subject, self.itemtype.schema, res),
+            'description' : partial(add_description, self.itemtype.schema, res),
+            'publisher' : partial(add_publisher, self.itemtype.schema, res),
+            'date': partial(add_date, self.itemtype.schema, res),
+            'identifier': partial(add_identifier, self.itemtype.schema, res),
+            'language': partial(add_language, self.itemtype.schema, res)}
+        for tag in dc_tags:
+            if tag in add_funcs:
+                m = '<dc:{0}.*>(.+)</dc:{0}>'.format(tag)
+                dc_tags[tag] = re.findall(m, self.xml)
+                for value in dc_tags[tag]:
+                    add_funcs[tag](value)
+        return res
+
+
+def run_harvesting(id):
+    from flask import current_app
+    current_app.logger.debug('harvesting...')
+    harvesting = HarvestSettings.query.filter_by(id=id).first()
+    records = get_records(harvesting.base_url, harvesting.from_date.__str__(),
+                          harvesting.until_date.__str__(),
+                          harvesting.metadata_prefix, harvesting.set_spec)
+    count = 0
+    for record in records:
+        xml = etree.tostring(record, encoding='utf-8').decode()
+        mapper = BookMapper(xml)
+        json = mapper.map()
+        json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+        dep = WekoDeposit.create({})
+        current_app.logger.debug(dep)
+        dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
+        dep.commit()
+        db.session.commit()
+        count = count + 1
+        if count > 10:
+            break
