@@ -22,7 +22,12 @@
 from __future__ import absolute_import, print_function
 
 from celery import shared_task
-
+from lxml import etree
+from weko_deposit.api import WekoDeposit
+from invenio_db import db
+from .harvester import DCMapper
+from .harvester import list_records as harvester_list_records
+from .models import HarvestSettings
 from .api import get_records, list_records
 from .signals import oaiharvest_finished
 from .utils import get_identifier_names
@@ -79,3 +84,20 @@ def list_records_from_dates(metadata_prefix=None, from_date=None,
     )
     if signals:
         oaiharvest_finished.send(request, records=records, name=name, **kwargs)
+
+
+@shared_task
+def run_harvesting(id):
+    harvesting = HarvestSettings.query.filter_by(id=id).first()
+    records = harvester_list_records(harvesting.base_url, harvesting.from_date.__str__(),
+                          harvesting.until_date.__str__(),
+                          harvesting.metadata_prefix, harvesting.set_spec)
+    for record in records:
+        xml = etree.tostring(record, encoding='utf-8').decode()
+        mapper = DCMapper(xml)
+        json = mapper.map()
+        json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+        dep = WekoDeposit.create({})
+        dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
+        dep.commit()
+        db.session.commit()

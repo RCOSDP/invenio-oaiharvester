@@ -36,7 +36,7 @@ DEFAULT_FIELD = [
     'lang']
 
 
-def get_records(
+def list_records(
         url=None,
         from_date=None,
         until_date=None,
@@ -77,6 +77,25 @@ def get_newest_itemtype_info(type_name):
             if target == None or target.updated < t.updated:
                 target = t
     return target
+
+
+def add_creator(schema, res, creator_name, lang=''):
+    creator_field = map_field(schema)['Creator']
+    subitems = map_field(schema['properties'][creator_field]['items'])
+    creator_name_array_name = subitems['Creator Name']
+    creator_name_array_subitems = \
+        map_field(schema['properties'][creator_field]['items']['properties'][creator_name_array_name]['items'])
+    item = {subitems['Affiliation']:'',
+            subitems['Creator Alternative']:'',
+            subitems['Creator Name Identifier']:'',
+            subitems['Family Name']:'',
+            subitems['Given Name']:'',
+            subitems['Creator Name'] : {
+                creator_name_array_subitems['Creator Name']:creator_name,
+                creator_name_array_subitems['Language']:lang}}
+    if creator_field not in res:
+        res[creator_field] = []
+    res[creator_field].append(item)
 
 
 def add_identifier(schema, res, identifier, identifier_type=''):
@@ -165,11 +184,66 @@ def add_publisher(schema, res, publisher, lang=''):
         res[publisher_field] = []
     res[publisher_field].append({publisher_item_name:publisher, language_item_name:lang})
 
+RESOURCE_TYPE_MAP = {
+    'conference paper' : 'Article',
+    'data paper' : 'Article',
+    'departmental bulletin paper' : 'Article',
+    'editorial' : 'Article',
+    'journal article' : 'Article',
+    'periodical' : 'Article',
+    'review article' : 'Article',
+    'article' : 'Article',
+    'Book' : 'Book',
+    'book part' : 'Book',
+    'cartographic material' : 'Cartographic Material',
+    'map' : 'Cartographic Material',
+    'conference object' : 'Conference object',
+    'conference proceedings' : 'Conference object',
+    'conference poster' : 'Conference object',
+    'presentation' : 'Conference object',
+    'dataset' : 'Dataset',
+    'image' : 'Image',
+    'still image' : 'Image',
+    'moving image' : 'Image',
+    'video' : 'Image',
+    'lecture' : 'Lecture',
+    'patent' : 'Patent',
+    'internal report' : 'Report',
+    'report' : 'Report',
+    'research report' : 'Report',
+    'technical report' : 'Report',
+    'policy report' : 'Report',
+    'report part' : 'Report',
+    'working paper' : 'Report',
+    'research paper' : 'Report',
+    'sound' : 'Sound',
+    'thesis' : 'Thesis',
+    'bachelor thesis' : 'Thesis',
+    'master thesis' : 'Thesis',
+    'doctoral thesis' : 'Thesis',
+    'thesis or dissertation' : 'Thesis',
+    'interactive resource' : 'Multiple',
+    'learning material' : 'Multiple',
+    'musical notation' : 'Multiple',
+    'research proposal' : 'Multiple',
+    'software' : 'Multiple',
+    'technical documentation' : 'Multiple',
+    'workflow' : 'Multiple',
+    'other' : 'Multiple',
+}
 
-class BookMapper:
+
+class DCMapper:
     def __init__(self, xml):
         self.xml = xml
-        self.itemtype = get_newest_itemtype_info('Book')
+        m_type = '<dc:type.*>(.+)</dc:type>'
+        type_tags = re.findall(m_type, self.xml)
+        self.itemtype = get_newest_itemtype_info('Multiple')
+        for t in type_tags:
+            if t.lower() in RESOURCE_TYPE_MAP:
+                self.itemtype \
+                    = get_newest_itemtype_info(RESOURCE_TYPE_MAP[t.lower()])
+                break
 
 
     def map(self):
@@ -180,6 +254,7 @@ class BookMapper:
             'type' : [], 'format' : [], 'identifier' : [], 'source' : [],
             'language' : [], 'relation' : [], 'coverage' : []}
         add_funcs = {
+            'creator' : partial(add_creator, self.itemtype.schema, res),
             'title' : partial(add_title, self.itemtype.schema, res),
             'subject' : partial(add_subject, self.itemtype.schema, res),
             'description' : partial(add_description, self.itemtype.schema, res),
@@ -194,26 +269,3 @@ class BookMapper:
                 for value in dc_tags[tag]:
                     add_funcs[tag](value)
         return res
-
-
-def run_harvesting(id):
-    from flask import current_app
-    current_app.logger.debug('harvesting...')
-    harvesting = HarvestSettings.query.filter_by(id=id).first()
-    records = get_records(harvesting.base_url, harvesting.from_date.__str__(),
-                          harvesting.until_date.__str__(),
-                          harvesting.metadata_prefix, harvesting.set_spec)
-    count = 0
-    for record in records:
-        xml = etree.tostring(record, encoding='utf-8').decode()
-        mapper = BookMapper(xml)
-        json = mapper.map()
-        json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
-        dep = WekoDeposit.create({})
-        current_app.logger.debug(dep)
-        dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
-        dep.commit()
-        db.session.commit()
-        count = count + 1
-        if count > 10:
-            break

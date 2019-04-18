@@ -36,7 +36,7 @@ from invenio_admin.forms import LazyChoices
 from wtforms.fields import RadioField, SubmitField
 from weko_index_tree.models import Index
 from .models import HarvestSettings
-#from .tasks import run_harvesting
+from .tasks import run_harvesting
 
 
 def _(x):
@@ -56,10 +56,8 @@ def link(text, link_func):
 class HarvestSettingView(ModelView):
     @expose('/harvesting/')
     def harvesting(self):
-        from .harvester import run_harvesting
-        run_harvesting(request.args.get('id'))
-#        run_harvesting.delay(request.args.get('id'))
-#        flash('harvesting running')
+        run_harvesting.delay(request.args.get('id'))
+        flash('running harvesting...')
         return redirect(url_for('harvestsettings.index_view'))
 
 
