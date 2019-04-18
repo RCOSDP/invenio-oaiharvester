@@ -93,11 +93,14 @@ def run_harvesting(id):
                           harvesting.until_date.__str__(),
                           harvesting.metadata_prefix, harvesting.set_spec)
     for record in records:
-        xml = etree.tostring(record, encoding='utf-8').decode()
-        mapper = DCMapper(xml)
-        json = mapper.map()
-        json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
-        dep = WekoDeposit.create({})
-        dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
-        dep.commit()
-        db.session.commit()
+        try:
+            xml = etree.tostring(record, encoding='utf-8').decode()
+            mapper = DCMapper(xml)
+            json = mapper.map()
+            json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+            dep = WekoDeposit.create({})
+            dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
+            dep.commit()
+            db.session.commit()
+        except:
+            continue
