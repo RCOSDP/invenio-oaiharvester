@@ -249,6 +249,19 @@ RESOURCE_TYPE_MAP = {
 }
 
 
+def map_sets(sets, encoding='utf-8'):
+    res = {}
+    m_setspec = '<setSpec>(.+)</setSpec>'
+    m_setname = '<setName>(.+)</setName>'
+    for s in sets:
+        xml = etree.tostring(s, encoding=encoding).decode()
+        spec = re.search(m_setspec, xml).group(1)
+        name = re.search(m_setname, xml).group(1)
+        if spec and name:
+            res[spec] = name 
+    return res
+
+
 class DCMapper:
     def __init__(self, xml):
         self.xml = xml
