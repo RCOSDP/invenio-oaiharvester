@@ -36,8 +36,24 @@ DEFAULT_FIELD = [
     'lang']
 
 
+def list_sets(url, encoding='utf-8'):
+    sets = []
+    payload = {
+        'verb' : 'ListSets'}
+    while True:
+        response = requests.get(url, params=payload)
+        et = etree.XML(response.text.encode(encoding))
+        sets = sets + et.findall('./ListSets/set', namespaces=et.nsmap)
+        resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
+        if resumptionToken is not None:
+            payload['resumptionToken'] = resumptionToken.text
+        else:
+            break
+    return sets
+
+
 def list_records(
-        url=None,
+        url,
         from_date=None,
         until_date=None,
         metadata_prefix=None,
