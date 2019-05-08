@@ -37,8 +37,8 @@ OAIHARVESTER_DEFAULT_UPDATE_STYLE = '0'
 """Default update style option."""
 
 OAIHARVESTER_AUTO_DISTRIBUTION_OPTIONS = {
-    '0': 'Run',
-    '1': 'Do not run',
+    '1': 'Run',
+    '0': 'Do not run',
 }
 OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION = '0'
 """Default auto distribution option."""

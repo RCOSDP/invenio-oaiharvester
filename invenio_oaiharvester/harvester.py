@@ -19,6 +19,7 @@
 
 import re
 import requests
+from collections import OrderedDict
 from functools import partial
 from celery import shared_task
 from lxml import etree
@@ -44,8 +45,8 @@ def list_sets(url, encoding='utf-8'):
         response = requests.get(url, params=payload)
         et = etree.XML(response.text.encode(encoding))
         sets = sets + et.findall('./ListSets/set', namespaces=et.nsmap)
-        resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
-        if resumptionToken is not None:
+        resumptionToken = et.find('./ListSets/resumptionToken', namespaces=et.nsmap)
+        if resumptionToken is not None and resumptionToken.text is not None:
             payload['resumptionToken'] = resumptionToken.text
         else:
             break
@@ -71,7 +72,7 @@ def list_records(
         et = etree.XML(response.text.encode(encoding))
         records = records + et.findall('./ListRecords/record', namespaces=et.nsmap)
         resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
-        if resumptionToken is not None:
+        if resumptionToken is not None and resumptionToken.text is not None:
             payload['resumptionToken'] = resumptionToken.text
         else:
             break
@@ -155,10 +156,10 @@ def add_subject(schema, res, subject, subject_uri='', subject_scheme='', lang=''
 
 
 def add_title(schema, res, title, lang=''):
-    if 'title_en' not in res:
-        res['title_en'] = title
-    if 'title_ja' not in res:
-        res['title_ja'] = title
+#    if 'title_en' not in res:
+#        res['title_en'] = title
+#    if 'title_ja' not in res:
+#        res['title_ja'] = title
     title_field = map_field(schema)['Title']
     subitems = map_field(schema['properties'][title_field]['items'])
     title_item_name = subitems['Title']
@@ -169,8 +170,8 @@ def add_title(schema, res, title, lang=''):
 
 
 def add_language(schema, res, lang):
-    if 'lang' not in res:
-        res['lang'] = lang
+#    if 'lang' not in res:
+#        res['lang'] = lang
     language_field = map_field(schema)['Language']
     subitems = map_field(schema['properties'][language_field]['items'])
     language_item_name = subitems['Language']
@@ -180,8 +181,8 @@ def add_language(schema, res, lang):
 
 
 def add_date(schema, res, date, date_type=''):
-    if 'pubdate' not in res:
-        res['pubdate'] = date
+#    if 'pubdate' not in res:
+#        res['pubdate'] = date
     date_field = map_field(schema)['Date']
     subitems = map_field(schema['properties'][date_field]['items'])
     date_item_name = subitems['Date']
@@ -250,13 +251,13 @@ RESOURCE_TYPE_MAP = {
 
 
 def map_sets(sets, encoding='utf-8'):
-    res = {}
-    m_setspec = '<setSpec>(.+)</setSpec>'
-    m_setname = '<setName>(.+)</setName>'
+    res = OrderedDict()
+    pattern = '<setSpec>(.+)</setSpec><setName>(.+)</setName>'
     for s in sets:
         xml = etree.tostring(s, encoding=encoding).decode()
-        spec = re.search(m_setspec, xml).group(1)
-        name = re.search(m_setname, xml).group(1)
+        m = re.search(pattern, xml)
+        spec = m.group(1)
+        name = m.group(2)
         if spec and name:
             res[spec] = name 
     return res
@@ -265,7 +266,7 @@ def map_sets(sets, encoding='utf-8'):
 class DCMapper:
     def __init__(self, xml):
         self.xml = xml
-        m_type = '<dc:type.*>(.+)</dc:type>'
+        m_type = '<dc:type.*>(.+?)</dc:type>'
         type_tags = re.findall(m_type, self.xml)
         self.itemtype = get_newest_itemtype_info('Multiple')
         for t in type_tags:
@@ -273,6 +274,11 @@ class DCMapper:
                 self.itemtype \
                     = get_newest_itemtype_info(RESOURCE_TYPE_MAP[t.lower()])
                 break
+
+
+    def specs(self):
+        pattern = '<setSpec>(.+?)</setSpec>'
+        return re.findall(pattern, self.xml)
 
 
     def map(self):
@@ -293,7 +299,7 @@ class DCMapper:
             'language': partial(add_language, self.itemtype.schema, res)}
         for tag in dc_tags:
             if tag in add_funcs:
-                m = '<dc:{0}.*>(.+)</dc:{0}>'.format(tag)
+                m = '<dc:{0}.*>(.+?)</dc:{0}>'.format(tag)
                 dc_tags[tag] = re.findall(m, self.xml)
                 for value in dc_tags[tag]:
                     add_funcs[tag](value)

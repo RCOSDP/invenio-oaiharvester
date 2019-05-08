@@ -25,12 +25,13 @@ from celery import shared_task
 from lxml import etree
 from weko_deposit.api import WekoDeposit
 from invenio_db import db
-from .harvester import DCMapper
+from .harvester import DCMapper, list_sets, map_sets
 from .harvester import list_records as harvester_list_records
 from .models import HarvestSettings
 from .api import get_records, list_records
 from .signals import oaiharvest_finished
 from .utils import get_identifier_names
+from weko_index_tree.models import Index
 
 
 @shared_task
@@ -86,9 +87,42 @@ def list_records_from_dates(metadata_prefix=None, from_date=None,
         oaiharvest_finished.send(request, records=records, name=name, **kwargs)
 
 
+def create_indexes(parent_id, sets):
+    existed_leaves = Index.query.filter_by(parent=parent_id).all()
+    if existed_leaves:
+        pos = max([idx.position for idx in existed_leaves]) + 1
+    else:
+        pos = 0
+    for s in sets:
+        if not Index.query.filter_by(parent=parent_id, index_link_name_english=s).first():
+            idx = Index()
+            idx.parent = parent_id
+            idx.index_name = sets[s]
+            idx.index_name_english = sets[s]
+            idx.index_link_name_english = s
+            idx.public_state = True
+            idx.recursive_public_state = True
+            idx.position = pos
+            pos = pos + 1
+            db.session.add(idx)
+            db.session.commit()
+
+def map_indexes(index_specs, parent_id):
+    res = []
+    for spec in index_specs:
+        idx = Index.query.filter_by(
+            index_link_name_english=spec, parent=parent_id).first()
+        res.append(idx.id)
+    return res
+
+
 @shared_task
 def run_harvesting(id):
     harvesting = HarvestSettings.query.filter_by(id=id).first()
+    if harvesting.auto_distribution:
+        sets = list_sets(harvesting.base_url)
+        sets_map = map_sets(sets)
+        create_indexes(harvesting.index_id, sets_map)
     records = harvester_list_records(harvesting.base_url, harvesting.from_date.__str__(),
                           harvesting.until_date.__str__(),
                           harvesting.metadata_prefix, harvesting.set_spec)
@@ -99,8 +133,13 @@ def run_harvesting(id):
             json = mapper.map()
             json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
             dep = WekoDeposit.create({})
-            dep.update({'actions': 'publish', 'index': [harvesting.index_id]}, json)
+            if harvesting.auto_distribution:
+                indexes = map_indexes(mapper.specs(), harvesting.index_id)
+            else:
+                indexes = harvesting.index_id
+            dep.update({'actions': 'publish', 'index': indexes}, json)
             dep.commit()
             db.session.commit()
         except:
+            db.session.rollback()
             continue
