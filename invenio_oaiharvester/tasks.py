@@ -136,7 +136,7 @@ def run_harvesting(id):
             if harvesting.auto_distribution:
                 indexes = map_indexes(mapper.specs(), harvesting.index_id)
             else:
-                indexes = harvesting.index_id
+                indexes = [harvesting.index_id]
             dep.update({'actions': 'publish', 'index': indexes}, json)
             dep.commit()
             db.session.commit()
