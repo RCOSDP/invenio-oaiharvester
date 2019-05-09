@@ -115,6 +115,62 @@ def add_creator(schema, res, creator_name, lang=''):
     res[creator_field].append(item)
 
 
+def add_contributor(schema, res, contributor_name, lang=''):
+    contributor_field = map_field(schema)['Contributor']
+    subitems = map_field(schema['properties'][contributor_field]['items'])
+    contributor_name_array_name = subitems['Contributor Name']
+    contributor_name_array_subitems = \
+        map_field(schema['properties'][contributor_field]['items']['properties'][contributor_name_array_name]['items'])
+    item = {subitems['Affiliation']:'',
+            subitems['Contributor Alternative']:'',
+            subitems['Contributor Name Identifier']:'',
+            subitems['Family Name']:'',
+            subitems['Given Name']:'',
+            subitems['Contributor Name'] : {
+                contributor_name_array_subitems['Contributor Name']:contributor_name,
+                contributor_name_array_subitems['Language']:lang}}
+    if contributor_field not in res:
+        res[contributor_field] = []
+    res[contributor_field].append(item)
+
+
+def add_relation(schema, res, relation, relation_type=''):
+    relation_field = map_field(schema)['Relation']
+    subitems = map_field(schema['properties'][relation_field]['items'])
+    related_identifier_array_name = subitems['Related Identifier']
+    related_identifier_array_subitems = \
+        map_field(schema['properties'][relation_field]['items']['properties'][related_identifier_array_name]['items'])
+    related_title_array_name = subitems['Related Title']
+    related_title_array_subitems = \
+        map_field(schema['properties'][relation_field]['items']['properties'][related_title_array_name]['items'])
+    item = {subitems['Relation']:relation,
+            subitems['Relation Type']:relation_type,
+            subitems['Related Identifier']: {
+                related_identifier_array_subitems['Related Identifier'],
+                related_identifier_array_subitems['Related Identifier Type']},
+            subitems['Related Title']: {
+                related_title_array_subitems['Related Title'],
+                related_title_array_subitems['Language']}}
+    if relation_field not in res:
+        res[relation_field] = []
+    res[relation_field].append(item)
+
+
+def add_rights(schema, res, rights, lang='', rights_resource=''):
+    rights_field = map_field(schema)['Rights']
+    subitems = map_field(schema['properties'][rights_field]['items'])
+    rights_array_name = subitems['Rights']
+    rights_array_subitems = \
+        map_field(schema['properties'][rights_field]['items']['properties'][rights_array_name]['items'])
+    item = {subitems['Rights Resource']:rights_resource,
+            subitems['Rights']: {
+                rights_array_subitems['Rights']:rights,
+                rights_array_subitems['Language']:lang}}
+    if rights_field not in res:
+        res[rights_field] = []
+    res[rights_field].append(item)
+
+
 def add_identifier(schema, res, identifier, identifier_type=''):
     identifier_field = map_field(schema)['Identifier']
     subitems = map_field(schema['properties'][identifier_field]['items'])
@@ -200,6 +256,7 @@ def add_publisher(schema, res, publisher, lang=''):
     if publisher_field not in res:
         res[publisher_field] = []
     res[publisher_field].append({publisher_item_name:publisher, language_item_name:lang})
+
 
 RESOURCE_TYPE_MAP = {
     'conference paper' : 'Article',
@@ -290,13 +347,16 @@ class DCMapper:
             'language' : [], 'relation' : [], 'coverage' : []}
         add_funcs = {
             'creator' : partial(add_creator, self.itemtype.schema, res),
+            'contributor' : partial(add_contributor, self.itemtype.schema, res),
             'title' : partial(add_title, self.itemtype.schema, res),
             'subject' : partial(add_subject, self.itemtype.schema, res),
             'description' : partial(add_description, self.itemtype.schema, res),
             'publisher' : partial(add_publisher, self.itemtype.schema, res),
             'date': partial(add_date, self.itemtype.schema, res),
             'identifier': partial(add_identifier, self.itemtype.schema, res),
-            'language': partial(add_language, self.itemtype.schema, res)}
+            'language': partial(add_language, self.itemtype.schema, res),
+            'relation' partial(add_relation, self.itemtype.schema, res),
+            'rights': partial(add_rights, self.itemtype.schema, res)}
         for tag in dc_tags:
             if tag in add_funcs:
                 m = '<dc:{0}.*>(.+?)</dc:{0}>'.format(tag)
