@@ -20,21 +20,16 @@
 
 """WEKO3 module docstring."""
 
+import os
 import sys
 
-import os
-from flask import abort, current_app, flash, request, app, url_for
-from flask import flash, redirect
-from flask_admin import BaseView, expose
+from flask import current_app, flash, redirect, request, url_for
+from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.contrib.sqla.fields import QuerySelectField
-from flask_admin.form import rules
 from flask_babelex import gettext as _
-from flask_wtf import FlaskForm
-from markupsafe import Markup
 from invenio_admin.forms import LazyChoices
-from wtforms.fields import RadioField, SubmitField
-from weko_index_tree.models import Index
+from markupsafe import Markup
+
 from .models import HarvestSettings
 from .tasks import run_harvesting
 
@@ -42,41 +37,32 @@ from .tasks import run_harvesting
 def _(x):
     return x
 
+
 def link(text, link_func):
     """Generate a object formatter for links.."""
     def object_formatter(v, c, m, p):
         """Format object view link."""
         return Markup('<a id="hvt-btn" class="btn btn-primary" '
                       'href="{0}?id={2}">{1}</a>'.format(link_func(m), text,
-                                                          m.id))
+                                                         m.id))
     return object_formatter
 
 
-
 class HarvestSettingView(ModelView):
+    """Harvest setting page view."""
+
     @expose('/harvesting/')
     def harvesting(self):
+        """Run harvesting."""
         run_harvesting.delay(request.args.get('id'))
         flash('running harvesting...')
         return redirect(url_for('harvestsettings.index_view'))
-
 
     can_create = True
     can_delete = True
     can_edit = True
     can_view_details = True
     page_size = 25
-
-    # form_overrides = dict(
-    #     target_index=QuerySelectField,
-    #     update_style=RadioField)
-    # form_args = dict(
-    #     target_index=dict(
-    #         query_factory=lambda : Index.query.all(),
-    #         get_pk=lambda index : index.id,
-    #         get_label=lambda index : index.index_name),
-    #     update_style=dict(
-    #         choices=[(0, 'Difference'), (1, 'Bulk')]))
 
     column_formatters = dict(
         Harvesting=link('Run', lambda o: url_for(
@@ -88,7 +74,6 @@ class HarvestSettingView(ModelView):
         'update_style', 'auto_distribution', 'Harvesting',
     )
 
-    form_base_class = FlaskForm
     form_columns = (
         'repository_name', 'base_url', 'from_date', 'until_date',
         'set_spec', 'metadata_prefix', 'target_index',
@@ -110,5 +95,4 @@ harvest_admin_view = dict(
     modelview=HarvestSettingView,
     model=HarvestSettings,
     category=_('OAI-PMH'),
-    name = _('Harvesting'))
-
+    name=_('Harvesting'))
