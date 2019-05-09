@@ -355,7 +355,7 @@ class DCMapper:
             'date': partial(add_date, self.itemtype.schema, res),
             'identifier': partial(add_identifier, self.itemtype.schema, res),
             'language': partial(add_language, self.itemtype.schema, res),
-            'relation' partial(add_relation, self.itemtype.schema, res),
+            'relation': partial(add_relation, self.itemtype.schema, res),
             'rights': partial(add_rights, self.itemtype.schema, res)}
         for tag in dc_tags:
             if tag in add_funcs:
