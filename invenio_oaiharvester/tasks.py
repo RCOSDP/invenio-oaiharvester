@@ -119,7 +119,7 @@ def map_indexes(index_specs, parent_id):
 @shared_task
 def run_harvesting(id):
     harvesting = HarvestSettings.query.filter_by(id=id).first()
-    if harvesting.auto_distribution:
+    if int(harvesting.auto_distribution):
         sets = list_sets(harvesting.base_url)
         sets_map = map_sets(sets)
         create_indexes(harvesting.index_id, sets_map)
@@ -133,7 +133,7 @@ def run_harvesting(id):
             json = mapper.map()
             json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
             dep = WekoDeposit.create({})
-            if harvesting.auto_distribution:
+            if int(harvesting.auto_distribution):
                 indexes = map_indexes(mapper.specs(), harvesting.index_id)
             else:
                 indexes = [harvesting.index_id]

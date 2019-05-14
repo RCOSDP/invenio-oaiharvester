@@ -146,11 +146,11 @@ def add_relation(schema, res, relation, relation_type=''):
     item = {subitems['Relation']:relation,
             subitems['Relation Type']:relation_type,
             subitems['Related Identifier']: {
-                related_identifier_array_subitems['Related Identifier'],
-                related_identifier_array_subitems['Related Identifier Type']},
+                related_identifier_array_subitems['Related Identifier']:'',
+                related_identifier_array_subitems['Related Identifier Type']:''},
             subitems['Related Title']: {
-                related_title_array_subitems['Related Title'],
-                related_title_array_subitems['Language']}}
+                related_title_array_subitems['Related Title']:'',
+                related_title_array_subitems['Language']:''}}
     if relation_field not in res:
         res[relation_field] = []
     res[relation_field].append(item)
