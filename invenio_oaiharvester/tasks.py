@@ -123,9 +123,12 @@ def run_harvesting(id):
         sets = list_sets(harvesting.base_url)
         sets_map = map_sets(sets)
         create_indexes(harvesting.index_id, sets_map)
-    records = harvester_list_records(harvesting.base_url, harvesting.from_date.__str__(),
-                          harvesting.until_date.__str__(),
-                          harvesting.metadata_prefix, harvesting.set_spec)
+    records = harvester_list_records(
+        harvesting.base_url,
+        harvesting.from_date.__str__() if harvesting.from_date else None,
+        harvesting.until_date.__str__() if harvesting.until_date else None,
+        harvesting.metadata_prefix,
+        harvesting.set_spec)
     for record in records:
         try:
             xml = etree.tostring(record, encoding='utf-8').decode()
