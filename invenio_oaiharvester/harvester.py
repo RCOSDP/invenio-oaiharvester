@@ -29,8 +29,7 @@ from weko_deposit.api import WekoDeposit
 from invenio_db import db
 
 DEFAULT_FIELD = [
-    'title_en',
-    'title_ja',
+    'title',
     'keywords',
     'keywords_en',
     'pubdate',
@@ -214,8 +213,8 @@ def add_subject(schema, res, subject, subject_uri='', subject_scheme='', lang=''
 def add_title(schema, res, title, lang=''):
 #    if 'title_en' not in res:
 #        res['title_en'] = title
-#    if 'title_ja' not in res:
-#        res['title_ja'] = title
+    if 'title' not in res:
+        res['title'] = title
     title_field = map_field(schema)['Title']
     subitems = map_field(schema['properties'][title_field]['items'])
     title_item_name = subitems['Title']
@@ -226,8 +225,8 @@ def add_title(schema, res, title, lang=''):
 
 
 def add_language(schema, res, lang):
-#    if 'lang' not in res:
-#        res['lang'] = lang
+    if 'lang' not in res:
+        res['lang'] = lang
     language_field = map_field(schema)['Language']
     subitems = map_field(schema['properties'][language_field]['items'])
     language_item_name = subitems['Language']
@@ -237,8 +236,8 @@ def add_language(schema, res, lang):
 
 
 def add_date(schema, res, date, date_type=''):
-#    if 'pubdate' not in res:
-#        res['pubdate'] = date
+    if 'pubdate' not in res:
+        res['pubdate'] = date
     date_field = map_field(schema)['Date']
     subitems = map_field(schema['properties'][date_field]['items'])
     date_item_name = subitems['Date']
