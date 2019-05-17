@@ -17,6 +17,7 @@
 # along with Invenio; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
+import datetime
 import re
 import requests
 from collections import OrderedDict
@@ -236,8 +237,6 @@ def add_language(schema, res, lang):
 
 
 def add_date(schema, res, date, date_type=''):
-    if 'pubdate' not in res:
-        res['pubdate'] = date
     date_field = map_field(schema)['Date']
     subitems = map_field(schema['properties'][date_field]['items'])
     date_item_name = subitems['Date']
@@ -346,7 +345,8 @@ class DCMapper:
 
 
     def map(self):
-        res = {'$schema': self.itemtype.id}
+        res = {'$schema' : self.itemtype.id,
+               'pubdate' : str(datetime.datetime.today().date())}
         dc_tags = {
             'title' : [], 'creator' : [], 'contributor' : [], 'rights' : [],
             'subject' :[], 'description' :[], 'publisher' : [], 'date' : [],
