@@ -315,20 +315,28 @@ def map_sets(sets, encoding='utf-8'):
         spec = m.group(1)
         name = m.group(2)
         if spec and name:
-            res[spec] = name 
+            res[spec] = name
     return res
 
 
 class DCMapper:
+    itemtype_map = {}
+
+    @classmethod
+    def update_itemtype_map(cls):
+        for t in ItemType.query.all():
+            cls.itemtype_map[t.item_type_name.name] = t
+
+
     def __init__(self, xml):
         self.xml = xml
         m_type = '<dc:type.*>(.+?)</dc:type>'
         type_tags = re.findall(m_type, self.xml)
-        self.itemtype = get_newest_itemtype_info('Multiple')
+        self.itemtype = DCMapper.itemtype_map['Multiple']
         for t in type_tags:
             if t.lower() in RESOURCE_TYPE_MAP:
                 self.itemtype \
-                    = get_newest_itemtype_info(RESOURCE_TYPE_MAP[t.lower()])
+                    = DCMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
                 break
 
 

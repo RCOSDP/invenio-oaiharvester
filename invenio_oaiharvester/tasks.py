@@ -129,6 +129,7 @@ def run_harvesting(id):
         harvesting.until_date.__str__() if harvesting.until_date else None,
         harvesting.metadata_prefix,
         harvesting.set_spec)
+    DCMapper.update_itemtype_map()
     for record in records:
         try:
             xml = etree.tostring(record, encoding='utf-8').decode()
