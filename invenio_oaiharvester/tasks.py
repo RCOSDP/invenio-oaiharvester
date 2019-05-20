@@ -93,10 +93,14 @@ def create_indexes(parent_id, sets):
         pos = max([idx.position for idx in existed_leaves]) + 1
     else:
         pos = 0
+    specs = [leaf.index_link_name_english for leaf in existed_leaves]
+    parent_idx = Index.query.filter_by(id=parent_id).first()
     for s in sets:
-        if not Index.query.filter_by(parent=parent_id, index_link_name_english=s).first():
+        if s not in specs:
             idx = Index()
             idx.parent = parent_id
+            idx.browsing_role = parent_idx.browsing_role
+            idx.contribute_role = parent_idx.contribute_role
             idx.index_name = sets[s]
             idx.index_name_english = sets[s]
             idx.index_link_name_english = s
@@ -106,6 +110,7 @@ def create_indexes(parent_id, sets):
             pos = pos + 1
             db.session.add(idx)
             db.session.commit()
+
 
 def map_indexes(index_specs, parent_id):
     res = []
