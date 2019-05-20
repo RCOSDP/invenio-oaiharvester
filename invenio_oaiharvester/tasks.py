@@ -123,27 +123,32 @@ def run_harvesting(id):
         sets = list_sets(harvesting.base_url)
         sets_map = map_sets(sets)
         create_indexes(harvesting.index_id, sets_map)
-    records = harvester_list_records(
-        harvesting.base_url,
-        harvesting.from_date.__str__() if harvesting.from_date else None,
-        harvesting.until_date.__str__() if harvesting.until_date else None,
-        harvesting.metadata_prefix,
-        harvesting.set_spec)
     DCMapper.update_itemtype_map()
-    for record in records:
-        try:
-            xml = etree.tostring(record, encoding='utf-8').decode()
-            mapper = DCMapper(xml)
-            json = mapper.map()
-            json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
-            dep = WekoDeposit.create({})
-            if int(harvesting.auto_distribution):
-                indexes = map_indexes(mapper.specs(), harvesting.index_id)
-            else:
-                indexes = [harvesting.index_id]
-            dep.update({'actions': 'publish', 'index': indexes}, json)
-            dep.commit()
-            db.session.commit()
-        except:
-            db.session.rollback()
-            continue
+    rtoken = None
+    while True:
+        records, rtoken = harvester_list_records(
+            harvesting.base_url,
+            harvesting.from_date.__str__() if harvesting.from_date else None,
+            harvesting.until_date.__str__() if harvesting.until_date else None,
+            harvesting.metadata_prefix,
+            harvesting.set_spec,
+            rtoken)
+        for record in records:
+            try:
+                xml = etree.tostring(record, encoding='utf-8').decode()
+                mapper = DCMapper(xml)
+                json = mapper.map()
+                json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+                dep = WekoDeposit.create({})
+                if int(harvesting.auto_distribution):
+                    indexes = map_indexes(mapper.specs(), harvesting.index_id)
+                else:
+                    indexes = [harvesting.index_id]
+                dep.update({'actions': 'publish', 'index': indexes}, json)
+                dep.commit()
+                db.session.commit()
+            except:
+                db.session.rollback()
+                continue
+        if not rtoken:
+            break

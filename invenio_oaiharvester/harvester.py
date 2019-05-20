@@ -59,6 +59,7 @@ def list_records(
         until_date=None,
         metadata_prefix=None,
         setspecs='*',
+        resumption_token=None,
         encoding='utf-8'):
     payload = {
         'verb' : 'ListRecords',
@@ -66,17 +67,17 @@ def list_records(
         'until' : until_date,
         'metadataPrefix': metadata_prefix,
         'set': setspecs}
+    if resumption_token:
+        payload['resumptionToken'] = resumption_token
     records = []
-    while True:
-        response = requests.get(url, params=payload)
-        et = etree.XML(response.text.encode(encoding))
-        records = records + et.findall('./ListRecords/record', namespaces=et.nsmap)
-        resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
-        if resumptionToken is not None and resumptionToken.text is not None:
-            payload['resumptionToken'] = resumptionToken.text
-        else:
-            break
-    return records
+    rtoken = None
+    response = requests.get(url, params=payload)
+    et = etree.XML(response.text.encode(encoding))
+    records = records + et.findall('./ListRecords/record', namespaces=et.nsmap)
+    resumptionToken = et.find('./ListRecords/resumptionToken', namespaces=et.nsmap)
+    if resumptionToken is not None:
+        rtoken = resumptionToken.text
+    return records, rtoken
 
 
 def map_field(schema):
