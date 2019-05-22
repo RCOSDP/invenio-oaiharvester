@@ -133,6 +133,7 @@ def create_item(record, harvesting):
     else:
         indexes = [harvesting.index_id]
     dep.update({'actions': 'publish', 'index': indexes}, json)
+    harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
     dep.commit()
 
@@ -141,6 +142,9 @@ def create_item(record, harvesting):
 def run_harvesting(id):
     harvesting = HarvestSettings.query.filter_by(id=id).first()
     harvesting.task_id = current_task.request.id
+    rtoken = harvesting.resumption_token
+    if not rtoken:
+        harvesting.item_processed = 0
     db.session.commit()
     try:
         if int(harvesting.auto_distribution):
@@ -148,7 +152,6 @@ def run_harvesting(id):
             sets_map = map_sets(sets)
             create_indexes(harvesting.index_id, sets_map)
         DCMapper.update_itemtype_map()
-        rtoken = harvesting.resumption_token
         pause = False
         def sigterm_handler(*args):
             nonlocal pause

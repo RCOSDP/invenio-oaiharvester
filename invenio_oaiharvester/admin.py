@@ -49,7 +49,8 @@ def run_stats():
             return Markup('Harvesting is paused with resumption token: ' +
                           harvesting.resumption_token)
         else:
-            return Markup('Harvesting is running at task id: ' + harvesting.task_id)
+            return Markup('Harvesting is running at task id:' + harvesting.task_id +
+                          '</br>' + str(harvesting.item_processed) + ' items processed')
     return object_formatter
 
 
@@ -108,6 +109,7 @@ class HarvestSettingView(ModelView):
         harvesting = HarvestSettings.query.filter_by(id=request.args.get('id')).first()
         harvesting.task_id = None
         harvesting.resumption_token = None
+        harvesting.item_processed = 0
         db.session.commit()
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))

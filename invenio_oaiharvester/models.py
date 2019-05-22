@@ -86,7 +86,7 @@ class HarvestSettings(db.Model):
 
     task_id = db.Column(db.String(40), default=None)
 
-    #item_processed = db.Column(db.Integer, default=0)
+    item_processed = db.Column(db.Integer, default=0)
 
     resumption_token = db.Column(db.String(255), default=None)
 
