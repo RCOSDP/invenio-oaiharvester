@@ -21,7 +21,8 @@
 
 from __future__ import absolute_import, print_function
 
-from celery import shared_task
+import signal
+from celery import current_task, shared_task
 from lxml import etree
 from weko_deposit.api import WekoDeposit
 from invenio_db import db
@@ -121,39 +122,56 @@ def map_indexes(index_specs, parent_id):
     return res
 
 
+def create_item(record, harvesting):
+    xml = etree.tostring(record, encoding='utf-8').decode()
+    mapper = DCMapper(xml)
+    json = mapper.map()
+    json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+    dep = WekoDeposit.create({})
+    if int(harvesting.auto_distribution):
+        indexes = map_indexes(mapper.specs(), harvesting.index_id)
+    else:
+        indexes = [harvesting.index_id]
+    dep.update({'actions': 'publish', 'index': indexes}, json)
+    db.session.commit()
+    dep.commit()
+
+
 @shared_task
 def run_harvesting(id):
     harvesting = HarvestSettings.query.filter_by(id=id).first()
-    if int(harvesting.auto_distribution):
-        sets = list_sets(harvesting.base_url)
-        sets_map = map_sets(sets)
-        create_indexes(harvesting.index_id, sets_map)
-    DCMapper.update_itemtype_map()
-    rtoken = None
-    while True:
-        records, rtoken = harvester_list_records(
-            harvesting.base_url,
-            harvesting.from_date.__str__() if harvesting.from_date else None,
-            harvesting.until_date.__str__() if harvesting.until_date else None,
-            harvesting.metadata_prefix,
-            harvesting.set_spec,
-            rtoken)
-        for record in records:
-            try:
-                xml = etree.tostring(record, encoding='utf-8').decode()
-                mapper = DCMapper(xml)
-                json = mapper.map()
-                json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
-                dep = WekoDeposit.create({})
-                if int(harvesting.auto_distribution):
-                    indexes = map_indexes(mapper.specs(), harvesting.index_id)
-                else:
-                    indexes = [harvesting.index_id]
-                dep.update({'actions': 'publish', 'index': indexes}, json)
-                dep.commit()
-                db.session.commit()
-            except:
-                db.session.rollback()
-                continue
-        if not rtoken:
-            break
+    harvesting.task_id = current_task.request.id
+    db.session.commit()
+    try:
+        if int(harvesting.auto_distribution):
+            sets = list_sets(harvesting.base_url)
+            sets_map = map_sets(sets)
+            create_indexes(harvesting.index_id, sets_map)
+        DCMapper.update_itemtype_map()
+        rtoken = harvesting.resumption_token
+        pause = False
+        def sigterm_handler(*args):
+            nonlocal pause
+            pause=True
+        signal.signal(signal.SIGTERM, sigterm_handler)
+        while True:
+            records, rtoken = harvester_list_records(
+                harvesting.base_url,
+                harvesting.from_date.__str__() if harvesting.from_date else None,
+                harvesting.until_date.__str__() if harvesting.until_date else None,
+                harvesting.metadata_prefix,
+                harvesting.set_spec,
+                rtoken)
+            for record in records:
+                try:
+                    create_item(record, harvesting)
+                except:
+                    db.session.rollback()
+            harvesting.resumption_token = rtoken
+            db.session.commit()
+            if (not rtoken) or (pause == True):
+                break
+    finally:
+        harvesting.task_id = None
+        db.session.commit()
+

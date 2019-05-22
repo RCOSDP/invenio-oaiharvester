@@ -84,5 +84,13 @@ class HarvestSettings(db.Model):
         db.String(1), nullable=False,
         default=lambda: current_app.config['OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION'])
 
+    task_id = db.Column(db.String(40), default=None)
+
+    #item_processed = db.Column(db.Integer, default=0)
+
+    resumption_token = db.Column(db.String(255), default=None)
+
+
+
 __all__ = ('OAIHarvestConfig',
            'HarvestSettings')
