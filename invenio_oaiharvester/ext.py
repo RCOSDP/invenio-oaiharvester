@@ -29,6 +29,7 @@ from __future__ import absolute_import, print_function
 from . import config
 from .cli import oaiharvester as oaiharvester_cmd
 
+
 class InvenioOAIHarvester(object):
     """Invenio-OAIHarvester extension."""
 

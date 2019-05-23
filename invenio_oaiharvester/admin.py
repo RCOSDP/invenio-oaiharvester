@@ -22,18 +22,20 @@
 
 import os
 import sys
-import celery
+from datetime import datetime
 
-from flask import current_app, flash, redirect, request, url_for
+import celery
+from flask import current_app, flash, redirect, request, session, url_for
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
 from flask_babelex import gettext as _
+from flask_login import current_user
 from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
 
 from .models import HarvestSettings
-from .tasks import run_harvesting
+from .tasks import link_error_handler, link_success_handler, run_harvesting
 
 
 def _(x):
@@ -88,7 +90,15 @@ class HarvestSettingView(ModelView):
     @expose('/run/')
     def run(self):
         """Run harvesting."""
-        run_harvesting.delay(request.args.get('id'))
+        run_harvesting.apply_async(args=(
+            request.args.get('id'), datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z'),
+            {'ip_address': request.remote_addr,
+             'user_agent': request.user_agent.string,
+             'user_id': (
+                current_user.get_id() if current_user.is_authenticated else None),
+             'session_id': session.get('sid_s')}),
+             link=link_success_handler.s(),
+             link_error=link_error_handler.s())
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))
 

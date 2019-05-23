@@ -22,17 +22,26 @@
 from __future__ import absolute_import, print_function
 
 import signal
+from ast import literal_eval as make_tuple
+from datetime import datetime
+
 from celery import current_task, shared_task
+from celery.utils.log import get_task_logger
+from flask import current_app
+from invenio_db import db
 from lxml import etree
 from weko_deposit.api import WekoDeposit
-from invenio_db import db
-from .harvester import DCMapper, list_sets, map_sets
-from .harvester import list_records as harvester_list_records
-from .models import HarvestSettings
+from weko_index_tree.models import Index
+
 from .api import get_records, list_records
+from .harvester import DCMapper
+from .harvester import list_records as harvester_list_records
+from .harvester import list_sets, map_sets
+from .models import HarvestSettings
 from .signals import oaiharvest_finished
 from .utils import get_identifier_names
-from weko_index_tree.models import Index
+
+logger = get_task_logger(__name__)
 
 
 @shared_task
@@ -138,7 +147,40 @@ def create_item(record, harvesting):
 
 
 @shared_task
-def run_harvesting(id):
+def link_success_handler(retval):
+    """Register task stats into invenio-stats"""
+    current_app.logger.info('[{0}] [{1} {2}] SUCCESS'.format(0, 'Harvest Task', retval[0]['task_id']))
+    oaiharvest_finished.send(current_app._get_current_object(),
+                             exec_data=retval[0], user_data=retval[1])
+
+
+@shared_task
+def link_error_handler(request, exc, traceback):
+    """Register task stats into invenio-stats for failure."""
+    args = make_tuple(request.argsrepr)  # Cannot access original args
+    start_time = datetime.strptime(args[1], '%Y-%m-%dT%H:%M:%S')
+    end_time = datetime.now()
+    oaiharvest_finished.send(current_app._get_current_object(),
+                             exec_data={
+                                 'task_state': 'FAILURE',
+                                 'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+                                 'end_time': end_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+                                 'total_records': 0,
+                                 'execution_time': str(end_time - start_time),
+                                 'task_name': 'harvest',
+                                 'repository_name': 'weko',  # TODO: Grab from config
+                                 'task_id': request.id
+                             },
+                             user_data=args[2])
+
+
+@shared_task
+def run_harvesting(id, start_time, user_data):
+    current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
+    # For registering runtime stats
+    start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
+    total_records = 0
+
     harvesting = HarvestSettings.query.filter_by(id=id).first()
     harvesting.task_id = current_task.request.id
     db.session.commit()
@@ -150,6 +192,7 @@ def run_harvesting(id):
         DCMapper.update_itemtype_map()
         rtoken = harvesting.resumption_token
         pause = False
+
         def sigterm_handler(*args):
             nonlocal pause
             pause=True
@@ -162,8 +205,12 @@ def run_harvesting(id):
                 harvesting.metadata_prefix,
                 harvesting.set_spec,
                 rtoken)
+            current_app.logger.info('[{0}] [{1}]'.format(
+                                    0, 'Processing records'))
             for record in records:
+
                 try:
+                    total_records += 1
                     create_item(record, harvesting)
                 except:
                     db.session.rollback()
@@ -174,4 +221,14 @@ def run_harvesting(id):
     finally:
         harvesting.task_id = None
         db.session.commit()
-
+        end_time = datetime.now()
+        current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
+        return ({'task_state': 'SUCCESS',
+                 'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+                 'end_time': end_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
+                 'total_records': total_records,
+                 'execution_time': str(end_time - start_time),
+                 'task_name': 'harvest',
+                 'repository_name': 'weko',  # TODO: Set and Grab from config
+                 'task_id': run_harvesting.request.id},
+                user_data)

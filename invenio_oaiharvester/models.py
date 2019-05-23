@@ -20,11 +20,14 @@
 """OAI harvest database models."""
 
 from __future__ import absolute_import, print_function
-from flask import current_app
+
 import datetime
 import enum
+
+from flask import current_app
 from invenio_db import db
 from weko_index_tree.models import Index
+
 
 class OAIHarvestConfig(db.Model):
     """Represents a OAIHarvestConfig record."""
