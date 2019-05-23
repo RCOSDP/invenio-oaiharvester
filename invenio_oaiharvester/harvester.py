@@ -19,15 +19,17 @@
 
 import datetime
 import re
-import requests
 from collections import OrderedDict
 from functools import partial
+
+import requests
 from celery import shared_task
-from lxml import etree
-from weko_records.models import ItemType
-from .models import HarvestSettings
-from weko_deposit.api import WekoDeposit
 from invenio_db import db
+from lxml import etree
+from weko_deposit.api import WekoDeposit
+from weko_records.models import ItemType
+
+from .models import HarvestSettings
 
 DEFAULT_FIELD = [
     'title',
