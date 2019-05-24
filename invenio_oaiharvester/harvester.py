@@ -105,11 +105,11 @@ def add_creator(schema, res, creator_name, lang=''):
     creator_name_array_name = subitems['Creator Name']
     creator_name_array_subitems = \
         map_field(schema['properties'][creator_field]['items']['properties'][creator_name_array_name]['items'])
-    item = {subitems['Affiliation']:'',
-            subitems['Creator Alternative']:'',
-            subitems['Creator Name Identifier']:'',
-            subitems['Family Name']:'',
-            subitems['Given Name']:'',
+    item = {subitems['Affiliation']:[],
+            subitems['Creator Alternative']:[],
+            subitems['Creator Name Identifier']:[],
+            subitems['Family Name']:[],
+            subitems['Given Name']:[],
             subitems['Creator Name'] : {
                 creator_name_array_subitems['Creator Name']:creator_name,
                 creator_name_array_subitems['Language']:lang}}
@@ -124,11 +124,11 @@ def add_contributor(schema, res, contributor_name, lang=''):
     contributor_name_array_name = subitems['Contributor Name']
     contributor_name_array_subitems = \
         map_field(schema['properties'][contributor_field]['items']['properties'][contributor_name_array_name]['items'])
-    item = {subitems['Affiliation']:'',
-            subitems['Contributor Alternative']:'',
-            subitems['Contributor Name Identifier']:'',
-            subitems['Family Name']:'',
-            subitems['Given Name']:'',
+    item = {subitems['Affiliation']:[],
+            subitems['Contributor Alternative']:[],
+            subitems['Contributor Name Identifier']:[],
+            subitems['Family Name']:[],
+            subitems['Given Name']:[],
             subitems['Contributor Name'] : {
                 contributor_name_array_subitems['Contributor Name']:contributor_name,
                 contributor_name_array_subitems['Language']:lang}}
