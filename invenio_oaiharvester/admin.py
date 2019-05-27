@@ -20,12 +20,11 @@
 
 """WEKO3 module docstring."""
 
-import os
-import sys
 from datetime import datetime
 
 import celery
-from flask import current_app, flash, redirect, request, session, url_for
+from flask import abort, current_app, flash, jsonify, redirect, request, session, \
+    url_for
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
 from flask_babelex import gettext as _
@@ -34,6 +33,7 @@ from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
 
+from . import config
 from .models import HarvestSettings
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
@@ -42,22 +42,34 @@ def _(x):
     return x
 
 
+def run_time():
+    def object_formatter(v, c, m, p):
+        harvesting = HarvestSettings.query.filter_by(id=m.id).first()
+        if harvesting.task_id != None or harvesting.resumption_token != None:
+            return Markup(_('Start Time: ') + '<div id="start_time"></div>' +
+                          _('End Time: ') + '<div id="end_time"></div>')
+    return object_formatter
+
+
 def run_stats():
     def object_formatter(v, c, m, p):
         harvesting = HarvestSettings.query.filter_by(id=m.id).first()
         if harvesting.task_id == None and harvesting.resumption_token == None:
-            return Markup('Harvesting is not running')
+            return Markup(_('Harvesting is not running'))
         elif harvesting.task_id == None:
-            return Markup('Harvesting is paused with resumption token: ' +
+            return Markup(_('Harvesting is paused with resumption token: ') +
                           harvesting.resumption_token)
         else:
-            return Markup('Harvesting is running at task id:' + harvesting.task_id +
-                          '</br>' + str(harvesting.item_processed) + ' items processed')
+            return Markup(_('Task ID: ') + '<div id="task_id">' +
+                          harvesting.task_id + '</div>' + '</br>' +
+                          _('Records Processed: ') + '<div id="task_total">' +
+                          str(harvesting.item_processed) + '</div>' +
+                          _('Task Status: ') + '<div id="task_status"></div>')
     return object_formatter
 
 
 def control_btns():
-    """Generate a object formatter for buttons"""
+    """Generate a object formatter for buttons."""
     def object_formatter(v, c, m, p):
         """Format object view."""
         run_url = url_for('harvestsettings.run')
@@ -125,6 +137,30 @@ class HarvestSettingView(ModelView):
                                 id=request.args.get('id')))
 
 
+    @expose('/status/<string:task_id>', methods=['GET'])
+    def get_task_status(self, task_id):
+        """Get the status of the harvest task."""
+        if not task_id:
+            return abort(500)
+
+        task_result = celery.result.AsyncResult(task_id)
+        if task_result.state == 'SUCCESS':
+            response = {
+                'start_time': task_result.info[0]['start_time'],
+                'end_time': task_result.info[0]['end_time'],
+                'total_records': task_result.info[0]['total_records'],
+                'state': task_result.state
+            }
+        else:  # PENDING ERROR or other state
+            response = {
+                'start_time': '',
+                'end_time': '',
+                'total_records': '',
+                'state': task_result.state
+            }
+        return jsonify(response)
+
+    details_template = 'invenio_oaiharvester/admin/harvest_details.html'
     can_create = True
     can_delete = True
     can_edit = True
@@ -133,12 +169,14 @@ class HarvestSettingView(ModelView):
 
     column_formatters = dict(
         running_status=run_stats(),
+        run_time=run_time(),
         Harvesting=control_btns()
     )
     column_details_list = (
         'repository_name', 'base_url', 'from_date', 'until_date',
         'set_spec', 'metadata_prefix', 'target_index.index_name',
-        'update_style', 'auto_distribution', 'running_status', 'Harvesting',
+        'update_style', 'auto_distribution', 'running_status', 'run_time',
+        'Harvesting',
     )
 
     form_columns = (
@@ -162,4 +200,9 @@ harvest_admin_view = dict(
     modelview=HarvestSettingView,
     model=HarvestSettings,
     category=_('OAI-PMH'),
-    name=_('Harvesting'))
+    name=_('Harvesting'),
+)
+
+__all__ = (
+    'harvest_admin_view'
+)

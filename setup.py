@@ -104,6 +104,12 @@ setup(
     entry_points={
         'invenio_admin.views': [
             'harvest_admin_view = invenio_oaiharvester.admin:harvest_admin_view',
+        ],    
+        'invenio_base.blueprints': [
+            'invenio_oaiharvester = invenio_oaiharvester.views:blueprint',
+        ],
+        'invenio_assets.bundles': [
+            'invenio_oaiharvester_js = invenio_oaiharvester.bundles:js',
         ],
         'invenio_base.apps': [
             'invenio_oaiharvester = invenio_oaiharvester:InvenioOAIHarvester',
