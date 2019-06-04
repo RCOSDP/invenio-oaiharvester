@@ -201,7 +201,6 @@ def run_harvesting(id, start_time, user_data):
     current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
     # For registering runtime stats
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
-    total_records = 0
 
     harvesting = HarvestSettings.query.filter_by(id=id).first()
     harvesting.task_id = current_task.request.id
@@ -232,9 +231,7 @@ def run_harvesting(id, start_time, user_data):
             current_app.logger.info('[{0}] [{1}]'.format(
                                     0, 'Processing records'))
             for record in records:
-
                 try:
-                    total_records += 1
                     create_item(record, harvesting)
                 except:
                     db.session.rollback()
@@ -250,7 +247,7 @@ def run_harvesting(id, start_time, user_data):
         return ({'task_state': 'SUCCESS',
                  'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
                  'end_time': end_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
-                 'total_records': total_records,
+                 'total_records': harvesting.item_processed,
                  'execution_time': str(end_time - start_time),
                  'task_name': 'harvest',
                  'repository_name': 'weko',  # TODO: Set and Grab from config
