@@ -21,6 +21,7 @@
 
 from __future__ import absolute_import, print_function
 
+import dateutil
 import signal
 from ast import literal_eval as make_tuple
 from datetime import datetime
@@ -29,9 +30,12 @@ from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from flask import current_app
 from invenio_db import db
+from invenio_pidstore.models import PersistentIdentifier
+from invenio_records.models import RecordMetadata
 from lxml import etree
 from weko_deposit.api import WekoDeposit
 from weko_index_tree.models import Index
+from weko_records.models import ItemMetadata
 
 from .api import get_records, list_records
 from .harvester import DCMapper
@@ -136,11 +140,28 @@ def create_item(record, harvesting):
     mapper = DCMapper(xml)
     json = mapper.map()
     json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
-    dep = WekoDeposit.create({})
-    if int(harvesting.auto_distribution):
-        indexes = map_indexes(mapper.specs(), harvesting.index_id)
+    hvstid = PersistentIdentifier.query.filter_by(
+        pid_type='hvstid',pid_value=mapper.identifier()).first()
+    if hvstid:
+        r = RecordMetadata.query.filter_by(id=hvstid.object_uuid).first()
+        pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
+        dep = WekoDeposit(r.json, r)
+        indexes = dep['path'].copy()
     else:
-        indexes = [harvesting.index_id]
+        dep = WekoDeposit.create({})
+        PersistentIdentifier.create(pid_type='hvstid',
+                                    pid_value=mapper.identifier(),
+                                    object_type=dep.pid.object_type,
+                                    object_uuid=dep.pid.object_uuid)
+        indexes = []
+    if int(harvesting.auto_distribution):
+        for i in map_indexes(mapper.specs(), harvesting.index_id):
+            indexes.append(i) if i not in indexes else None
+    else:
+        indexes.append(harvesting.index_id) if harvesting.index_id not in indexes else None
+    if hvstid and pubdate >= mapper.datestamp() and \
+       indexes == dep['path'] and harvesting.update_style == '1':
+        return
     dep.update({'actions': 'publish', 'index': indexes}, json)
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()

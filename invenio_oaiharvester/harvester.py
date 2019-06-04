@@ -17,11 +17,11 @@
 # along with Invenio; if not, write to the Free Software Foundation, Inc.,
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 
-import datetime
 import re
 from collections import OrderedDict
 from functools import partial
 
+import dateutil
 import requests
 from celery import shared_task
 from invenio_db import db
@@ -342,6 +342,17 @@ class DCMapper:
                 break
 
 
+    def identifier(self):
+        pattern = '<identifier>(.+?)</identifier>'
+        return re.search(pattern, self.xml).group(1)
+
+
+    def datestamp(self):
+        pattern = '<datestamp>(.+?)</datestamp>'
+        datestring = re.search(pattern, self.xml).group(1)
+        return dateutil.parser.parse(datestring).date()
+
+
     def specs(self):
         pattern = '<setSpec>(.+?)</setSpec>'
         return re.findall(pattern, self.xml)
@@ -349,7 +360,7 @@ class DCMapper:
 
     def map(self):
         res = {'$schema' : self.itemtype.id,
-               'pubdate' : str(datetime.datetime.today().date())}
+               'pubdate' : str(self.datestamp())}
         dc_tags = {
             'title' : [], 'creator' : [], 'contributor' : [], 'rights' : [],
             'subject' :[], 'description' :[], 'publisher' : [], 'date' : [],
