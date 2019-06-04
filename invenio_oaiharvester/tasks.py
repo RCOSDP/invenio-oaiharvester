@@ -135,7 +135,7 @@ def map_indexes(index_specs, parent_id):
     return res
 
 
-def create_item(record, harvesting):
+def process_item(record, harvesting):
     xml = etree.tostring(record, encoding='utf-8').decode()
     mapper = DCMapper(xml)
     json = mapper.map()
@@ -232,7 +232,7 @@ def run_harvesting(id, start_time, user_data):
                                     0, 'Processing records'))
             for record in records:
                 try:
-                    create_item(record, harvesting)
+                    process_item(record, harvesting)
                 except:
                     db.session.rollback()
             harvesting.resumption_token = rtoken
