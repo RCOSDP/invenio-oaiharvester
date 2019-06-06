@@ -107,7 +107,7 @@ def create_indexes(parent_id, sets):
         pos = max([idx.position for idx in existed_leaves]) + 1
     else:
         pos = 0
-    specs = [leaf.index_link_name_english for leaf in existed_leaves]
+    specs = [leaf.harvest_spec for leaf in existed_leaves]
     parent_idx = Index.query.filter_by(id=parent_id).first()
     for s in sets:
         if s not in specs:
@@ -117,7 +117,7 @@ def create_indexes(parent_id, sets):
             idx.contribute_role = parent_idx.contribute_role
             idx.index_name = sets[s]
             idx.index_name_english = sets[s]
-            idx.index_link_name_english = s
+            idx.harvest_spec = s
             idx.public_state = True
             idx.recursive_public_state = True
             idx.position = pos
@@ -130,7 +130,7 @@ def map_indexes(index_specs, parent_id):
     res = []
     for spec in index_specs:
         idx = Index.query.filter_by(
-            index_link_name_english=spec, parent=parent_id).first()
+            harvest_spec=spec, parent=parent_id).first()
         res.append(idx.id)
     return res
 
@@ -138,8 +138,6 @@ def map_indexes(index_specs, parent_id):
 def process_item(record, harvesting):
     xml = etree.tostring(record, encoding='utf-8').decode()
     mapper = DCMapper(xml)
-    json = mapper.map()
-    json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
     hvstid = PersistentIdentifier.query.filter_by(
         pid_type='hvstid',pid_value=mapper.identifier()).first()
     if hvstid:
@@ -162,7 +160,12 @@ def process_item(record, harvesting):
     if hvstid and pubdate >= mapper.datestamp() and \
        indexes == dep['path'] and harvesting.update_style == '1':
         return
-    dep.update({'actions': 'publish', 'index': indexes}, json)
+    if mapper.is_deleted():
+        pass
+    else:
+        json = mapper.map()
+        json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+        dep.update({'actions': 'publish', 'index': indexes}, json)
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
     dep.commit()

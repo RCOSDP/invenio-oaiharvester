@@ -342,6 +342,10 @@ class DCMapper:
                 break
 
 
+    def is_deleted(self):
+        return '<header status="deleted">' in self.xml
+
+
     def identifier(self):
         pattern = '<identifier>(.+?)</identifier>'
         return re.search(pattern, self.xml).group(1)
