@@ -36,9 +36,12 @@ from __future__ import absolute_import, print_function
 
 import datetime
 
+from flask import current_app
 from invenio_db import db
+from invenio_mail.api import send_mail
 from sickle import Sickle
 from sickle.oaiexceptions import NoRecordsMatch
+from weko_accounts.api import get_user_info_by_role_name
 
 from .errors import NameOrUrlMissing, WrongDateCombination
 from .utils import get_oaiharvest_object
@@ -163,3 +166,34 @@ def get_info_by_oai_name(name):
     obj = get_oaiharvest_object(name)
     lastrun = obj.lastrun.strftime("%Y-%m-%d")
     return obj.baseurl, obj.metadataprefix, lastrun, obj.setspecs
+
+
+def send_run_status_mail(status, id, name, start_time,
+                         end_time, item_processed):
+    """Send harvest runnig status mail."""
+    try:
+        # mail title
+        subject = 'harvest running status [{1}({2})] [{0}]'.format(status,
+                                                                   name, id)
+        # recipient mail list
+        users = []
+        users += get_user_info_by_role_name('Repository Administrator')
+        users += get_user_info_by_role_name('Community Administrator')
+        mail_list = []
+        for user in users:
+            mail_list.append(user.email)
+        # mail body
+        body = ('{1}({2}) is {0}\n\n'
+                'No. of processed item: {3}\n'
+                'Processing time: {4}\n'
+                'Start date: {5}\n'
+                'Finish date: {6}'
+                ).format(status, name, id,
+                         str(item_processed),
+                         str(end_time - start_time),
+                         start_time.strftime("%Y/%m/%d %H:%M:%S"),
+                         end_time.strftime("%Y/%m/%d %H:%M:%S"))
+        # send mail
+        send_mail(subject, mail_list, body)
+    except Exception as ex:
+        current_app.logger.error(ex)

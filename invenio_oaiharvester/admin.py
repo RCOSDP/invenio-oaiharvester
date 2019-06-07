@@ -34,6 +34,7 @@ from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
 
+from .api import send_run_status_mail
 from .models import HarvestSettings
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
@@ -117,6 +118,10 @@ class HarvestSettingView(ModelView):
     def clear(self):
         """Clear harvesting."""
         harvesting = HarvestSettings.query.filter_by(id=request.args.get('id')).first()
+        send_run_status_mail('CANCEL', harvesting.id,
+                            harvesting.repository_name,
+                            datetime.now(), datetime.now(),
+                            0)
         harvesting.task_id = None
         harvesting.resumption_token = None
         harvesting.item_processed = 0

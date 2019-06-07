@@ -37,7 +37,7 @@ from weko_deposit.api import WekoDeposit
 from weko_index_tree.models import Index
 from weko_records.models import ItemMetadata
 
-from .api import get_records, list_records
+from .api import get_records, list_records, send_run_status_mail
 from .harvester import DCMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
@@ -211,13 +211,14 @@ def run_harvesting(id, start_time, user_data):
     if not rtoken:
         harvesting.item_processed = 0
     db.session.commit()
+    error = False
+    pause = False
     try:
         if int(harvesting.auto_distribution):
             sets = list_sets(harvesting.base_url)
             sets_map = map_sets(sets)
             create_indexes(harvesting.index_id, sets_map)
         DCMapper.update_itemtype_map()
-        pause = False
 
         def sigterm_handler(*args):
             nonlocal pause
@@ -242,10 +243,19 @@ def run_harvesting(id, start_time, user_data):
             db.session.commit()
             if (not rtoken) or (pause == True):
                 break
+    except:
+        error = True
     finally:
+        status = 'SUCCESS'
+        if error:
+            status = 'ERROR'
+        elif pause:
+            status = 'PAUSE'
         harvesting.task_id = None
         db.session.commit()
         end_time = datetime.now()
+        send_run_status_mail(status, id, harvesting.repository_name,
+                             start_time, end_time, harvesting.item_processed)
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
         return ({'task_state': 'SUCCESS',
                  'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
