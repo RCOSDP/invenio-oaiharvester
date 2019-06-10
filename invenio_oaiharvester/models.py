@@ -56,8 +56,11 @@ class OAIHarvestConfig(db.Model):
 
 
 class HarvestSettings(db.Model):
-    """Harvest Settings"""
+    """Harvest Settings."""
+
     class UpdateStyle(enum.IntEnum):
+        """Harvest Settings."""
+
         Difference = 0
         Bulk = 1
 
@@ -77,7 +80,10 @@ class HarvestSettings(db.Model):
         db.ForeignKey(Index.id),
         nullable=False
     )
-    target_index = db.relationship(Index, backref='target_index', foreign_keys=[index_id])
+    target_index = db.relationship(
+        Index,
+        backref='target_index',
+        foreign_keys=[index_id])
 
     update_style = db.Column(
         db.String(1), nullable=False,
@@ -92,7 +98,6 @@ class HarvestSettings(db.Model):
     item_processed = db.Column(db.Integer, default=0)
 
     resumption_token = db.Column(db.String(255), default=None)
-
 
 
 __all__ = ('OAIHarvestConfig',
