@@ -30,7 +30,7 @@ from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from flask import current_app
 from invenio_db import db
-from invenio_pidstore.models import PersistentIdentifier
+from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_records.models import RecordMetadata
 from lxml import etree
 from weko_deposit.api import WekoDeposit
@@ -142,9 +142,14 @@ def process_item(record, harvesting):
         pid_type='hvstid',pid_value=mapper.identifier()).first()
     if hvstid:
         r = RecordMetadata.query.filter_by(id=hvstid.object_uuid).first()
+        recid = PersistentIdentifier.query.filter_by(
+            pid_type='recid',object_uuid=hvstid.object_uuid).first()
+        recid.status = PIDStatus.REGISTERED
         pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
+    elif mapper.is_deleted():
+        return
     else:
         dep = WekoDeposit.create({})
         PersistentIdentifier.create(pid_type='hvstid',
@@ -152,23 +157,27 @@ def process_item(record, harvesting):
                                     object_type=dep.pid.object_type,
                                     object_uuid=dep.pid.object_uuid)
         indexes = []
+
     if int(harvesting.auto_distribution):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
     else:
-        indexes.append(harvesting.index_id) if harvesting.index_id not in indexes else None
+        indexes.append(harvesting.index_id) if str(harvesting.index_id) not in indexes else None
+
     if hvstid and pubdate >= mapper.datestamp() and \
        indexes == dep['path'] and harvesting.update_style == '1':
         return
+
     if mapper.is_deleted():
-        pass
+        recid.status = PIDStatus.DELETED
+        dep.indexer.delete(dep)
     else:
         json = mapper.map()
         json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
         dep.update({'actions': 'publish', 'index': indexes}, json)
+        dep.commit()
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
-    dep.commit()
 
 
 @shared_task
