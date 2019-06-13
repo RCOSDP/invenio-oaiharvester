@@ -36,7 +36,7 @@ from __future__ import absolute_import, print_function
 
 import datetime
 
-from flask import current_app
+from flask import current_app, render_template
 from invenio_db import db
 from invenio_mail.api import send_mail
 from sickle import Sickle
@@ -44,7 +44,12 @@ from sickle.oaiexceptions import NoRecordsMatch
 from weko_accounts.api import get_user_info_by_role_name
 
 from .errors import NameOrUrlMissing, WrongDateCombination
-from .utils import get_oaiharvest_object
+from .utils import get_oaiharvest_object, RunStat
+from .models import HarvestSettings
+
+
+def _(x):
+    return x
 
 
 def list_records(metadata_prefix=None, from_date=None, until_date=None,
@@ -168,13 +173,23 @@ def get_info_by_oai_name(name):
     return obj.baseurl, obj.metadataprefix, lastrun, obj.setspecs
 
 
-def send_run_status_mail(status, id, name, start_time,
-                         end_time, item_processed):
+def send_run_status_mail(end_time, harvesting, stat):
     """Send harvest runnig status mail."""
     try:
+        result = ''
+        if stat.status == RunStat.Status.SUCCESS:
+            result = _('Successful')
+        elif stat.status == RunStat.Status.PAUSE:
+            result = _('Suspended')
+        elif stat.status == RunStat.Status.CANCEL:
+            result = _('Cancel')
+        elif stat.status == RunStat.Status.ERROR:
+            result = _('Failed')
         # mail title
-        subject = 'harvest running status [{1}({2})] [{0}]'.format(status,
-                                                                   name, id)
+        subject = _('harvester running status') + \
+                   ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
+                                              harvesting.id,
+                                              result)
         # recipient mail list
         users = []
         users += get_user_info_by_role_name('Repository Administrator')
@@ -182,18 +197,17 @@ def send_run_status_mail(status, id, name, start_time,
         mail_list = []
         for user in users:
             mail_list.append(user.email)
-        # mail body
-        body = ('{1}({2}) is {0}\n\n'
-                'No. of processed item: {3}\n'
-                'Processing time: {4}\n'
-                'Start date: {5}\n'
-                'Finish date: {6}'
-                ).format(status, name, id,
-                         str(item_processed),
-                         str(end_time - start_time),
-                         start_time.strftime("%Y/%m/%d %H:%M:%S"),
-                         end_time.strftime("%Y/%m/%d %H:%M:%S"))
+
+        update_style = \
+            HarvestSettings.UpdateStyle(int(harvesting.update_style)).name
         # send mail
-        send_mail(subject, mail_list, body)
+        send_mail(subject, mail_list,
+                  html=\
+                  render_template('invenio_oaiharvester/run_stat_mail.html',
+                                  result_text=result,
+                                  harvesting=harvesting,
+                                  stat=stat,
+                                  end_time=end_time,
+                                  update_style=update_style))
     except Exception as ex:
         current_app.logger.error(ex)

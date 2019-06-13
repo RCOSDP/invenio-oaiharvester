@@ -43,7 +43,7 @@ from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
 from .models import HarvestSettings
 from .signals import oaiharvest_finished
-from .utils import get_identifier_names
+from .utils import get_identifier_names, RunStat, ItemEvents
 
 logger = get_task_logger(__name__)
 
@@ -137,8 +137,10 @@ def map_indexes(index_specs, parent_id):
     return res
 
 
-def process_item(record, harvesting):
+def process_item(record, harvesting, stat):
     """Process item."""
+    stat.add_process()
+    action = ItemEvents.INIT
     xml = etree.tostring(record, encoding='utf-8').decode()
     mapper = DCMapper(xml)
     hvstid = PersistentIdentifier.query.filter_by(
@@ -149,6 +151,7 @@ def process_item(record, harvesting):
             r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
+        action = ItemEvents.UPDATE
     else:
         dep = WekoDeposit.create({})
         PersistentIdentifier.create(pid_type='hvstid',
@@ -156,6 +159,7 @@ def process_item(record, harvesting):
                                     object_type=dep.pid.object_type,
                                     object_uuid=dep.pid.object_uuid)
         indexes = []
+        action = ItemEvents.CREATE
     if int(harvesting.auto_distribution):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
@@ -166,6 +170,7 @@ def process_item(record, harvesting):
        indexes == dep['path'] and harvesting.update_style == '1':
         return
     if mapper.is_deleted():
+        action = ItemEvents.DELETE
         pass
     else:
         json = mapper.map()
@@ -174,6 +179,13 @@ def process_item(record, harvesting):
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
     dep.commit()
+
+    if action == ItemEvents.CREATE:
+        stat.add_create()
+    elif action == ItemEvents.UPDATE:
+        stat.add_update()
+    elif action == ItemEvents.DELETE:
+        stat.add_delete()
 
 
 @shared_task
@@ -219,18 +231,19 @@ def run_harvesting(id, start_time, user_data):
     if not rtoken:
         harvesting.item_processed = 0
     db.session.commit()
-    error = False
-    pause = False
+    stat = RunStat.get('HarvestTask_' + str(harvesting.id))
     try:
         if int(harvesting.auto_distribution):
             sets = list_sets(harvesting.base_url)
             sets_map = map_sets(sets)
             create_indexes(harvesting.index_id, sets_map)
         DCMapper.update_itemtype_map()
+        pause = False
 
         def sigterm_handler(*args):
             nonlocal pause
             pause = True
+            stat.change_status(RunStat.Status.PAUSE)
         signal.signal(signal.SIGTERM, sigterm_handler)
         while True:
             records, rtoken = harvester_list_records(
@@ -244,26 +257,22 @@ def run_harvesting(id, start_time, user_data):
                                     0, 'Processing records'))
             for record in records:
                 try:
-                    process_item(record, harvesting)
+                    process_item(record, harvesting, stat)
                 except BaseException:
                     db.session.rollback()
+                    stat.add_error()
             harvesting.resumption_token = rtoken
             db.session.commit()
             if (not rtoken) or (pause is True):
                 break
-    except BaseException:
-        error = True
+    except Exception as ex:
+        stat.change_status(RunStat.Status.ERROR, ex)
     finally:
-        status = 'SUCCESS'
-        if error:
-            status = 'ERROR'
-        elif pause:
-            status = 'PAUSE'
         harvesting.task_id = None
         db.session.commit()
         end_time = datetime.now()
-        send_run_status_mail(status, id, harvesting.repository_name,
-                             start_time, end_time, harvesting.item_processed)
+        send_run_status_mail(end_time, harvesting, stat)
+        stat.delete()
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
         return ({'task_state': 'SUCCESS',
                  'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
