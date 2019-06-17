@@ -25,6 +25,7 @@ import sys
 from datetime import datetime
 
 import celery
+from enum import Enum
 from flask import current_app, flash, redirect, request, session, url_for
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
@@ -34,7 +35,9 @@ from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
 
+from .api import send_run_status_mail
 from .models import HarvestSettings
+from .utils import RunStat
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
 
@@ -43,11 +46,12 @@ def _(x):
 
 
 def run_stats():
+    """Get run status."""
     def object_formatter(v, c, m, p):
         harvesting = HarvestSettings.query.filter_by(id=m.id).first()
-        if harvesting.task_id == None and harvesting.resumption_token == None:
+        if harvesting.task_id is None and harvesting.resumption_token is None:
             return Markup('Harvesting is not running')
-        elif harvesting.task_id == None:
+        elif harvesting.task_id is None:
             return Markup('Harvesting is paused with resumption token: ' +
                           harvesting.resumption_token)
         else:
@@ -57,28 +61,28 @@ def run_stats():
 
 
 def control_btns():
-    """Generate a object formatter for buttons"""
+    """Generate a object formatter for buttons."""
     def object_formatter(v, c, m, p):
         """Format object view."""
         run_url = url_for('harvestsettings.run')
-        run_text =_('Run')
+        run_text = _('Run')
         run_btn = '<a id="hvt-btn" class="btn btn-primary" href="{0}?id={1}">{2}</a>'.format(
             run_url, m.id, run_text)
-        resume_text =_('Resume')
+        resume_text = _('Resume')
         resume_btn = '<a id="resume-btn" class="btn btn-primary" href="{0}?id={1}">{2}</a>'.format(
             run_url, m.id, resume_text)
         pause_url = url_for('harvestsettings.pause')
-        pause_text =_('Pause')
+        pause_text = _('Pause')
         pause_btn = '<a id="pause-btn" class="btn btn-warning" href="{0}?id={1}">{2}</a>'.format(
             pause_url, m.id, pause_text)
         clear_url = url_for('harvestsettings.clear')
-        clear_text =_('Clear')
+        clear_text = _('Clear')
         clear_btn = '<a id="clear-btn" class="btn btn-danger" href="{0}?id={1}">{2}</a>'.format(
             clear_url, m.id, clear_text)
         harvesting = HarvestSettings.query.filter_by(id=m.id).first()
-        if harvesting.task_id == None and harvesting.resumption_token == None:
+        if harvesting.task_id is None and harvesting.resumption_token is None:
             return Markup(run_btn)
-        elif harvesting.task_id == None:
+        elif harvesting.task_id is None:
             return Markup(resume_btn + clear_btn)
         else:
             return Markup(pause_btn)
@@ -92,38 +96,42 @@ class HarvestSettingView(ModelView):
     def run(self):
         """Run harvesting."""
         run_harvesting.apply_async(args=(
-            request.args.get('id'), datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z'),
+            request.args.get('id'),
+            datetime.now().strftime('%Y-%m-%dT%H:%M:%S%z'),
             {'ip_address': request.remote_addr,
              'user_agent': request.user_agent.string,
              'user_id': (
-                current_user.get_id() if current_user.is_authenticated else None),
+                 current_user.get_id() if current_user.is_authenticated else None),
              'session_id': session.get('sid_s')}),
-             link=link_success_handler.s(),
-             link_error=link_error_handler.s())
+            link=link_success_handler.s(),
+            link_error=link_error_handler.s())
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))
-
 
     @expose('/pause/')
     def pause(self):
         """Pause harvesting."""
-        harvesting = HarvestSettings.query.filter_by(id=request.args.get('id')).first()
+        harvesting = HarvestSettings.query.filter_by(
+            id=request.args.get('id')).first()
         celery.current_app.control.revoke(harvesting.task_id, terminate=True)
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))
 
-
     @expose('/clear/')
     def clear(self):
         """Clear harvesting."""
-        harvesting = HarvestSettings.query.filter_by(id=request.args.get('id')).first()
+        harvesting = HarvestSettings.query.filter_by(
+            id=request.args.get('id')).first()
+        stat = RunStat.get('HarvestTask_' + str(harvesting.id))
+        stat.change_status(RunStat.Status.CANCEL)
+        send_run_status_mail(datetime.now(), harvesting, stat)
+        stat.delete()
         harvesting.task_id = None
         harvesting.resumption_token = None
         harvesting.item_processed = 0
         db.session.commit()
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))
-
 
     can_create = True
     can_delete = True

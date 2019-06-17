@@ -21,11 +21,11 @@
 
 from __future__ import absolute_import, print_function
 
-import dateutil
 import signal
 from ast import literal_eval as make_tuple
 from datetime import datetime
 
+import dateutil
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from flask import current_app
@@ -37,13 +37,13 @@ from weko_deposit.api import WekoDeposit
 from weko_index_tree.models import Index
 from weko_records.models import ItemMetadata
 
-from .api import get_records, list_records
+from .api import get_records, list_records, send_run_status_mail
 from .harvester import DCMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
 from .models import HarvestSettings
 from .signals import oaiharvest_finished
-from .utils import get_identifier_names
+from .utils import get_identifier_names, RunStat, ItemEvents
 
 logger = get_task_logger(__name__)
 
@@ -102,6 +102,7 @@ def list_records_from_dates(metadata_prefix=None, from_date=None,
 
 
 def create_indexes(parent_id, sets):
+    """Create indexes."""
     existed_leaves = Index.query.filter_by(parent=parent_id).all()
     if existed_leaves:
         pos = max([idx.position for idx in existed_leaves]) + 1
@@ -127,6 +128,7 @@ def create_indexes(parent_id, sets):
 
 
 def map_indexes(index_specs, parent_id):
+    """Get indexes map."""
     res = []
     for spec in index_specs:
         idx = Index.query.filter_by(
@@ -135,11 +137,14 @@ def map_indexes(index_specs, parent_id):
     return res
 
 
-def process_item(record, harvesting):
+def process_item(record, harvesting, stat):
+    """Process item."""
+    stat.add_process()
+    action = ItemEvents.INIT
     xml = etree.tostring(record, encoding='utf-8').decode()
     mapper = DCMapper(xml)
     hvstid = PersistentIdentifier.query.filter_by(
-        pid_type='hvstid',pid_value=mapper.identifier()).first()
+        pid_type='hvstid', pid_value=mapper.identifier()).first()
     if hvstid:
         r = RecordMetadata.query.filter_by(id=hvstid.object_uuid).first()
         recid = PersistentIdentifier.query.filter_by(
@@ -148,6 +153,7 @@ def process_item(record, harvesting):
         pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
+        action = ItemEvents.UPDATE
     elif mapper.is_deleted():
         return
     else:
@@ -157,7 +163,7 @@ def process_item(record, harvesting):
                                     object_type=dep.pid.object_type,
                                     object_uuid=dep.pid.object_uuid)
         indexes = []
-
+        action = ItemEvents.CREATE
     if int(harvesting.auto_distribution):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
@@ -171,6 +177,7 @@ def process_item(record, harvesting):
     if mapper.is_deleted():
         recid.status = PIDStatus.DELETED
         dep.indexer.delete(dep)
+        action = ItemEvents.DELETE
     else:
         json = mapper.map()
         json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
@@ -179,11 +186,20 @@ def process_item(record, harvesting):
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
 
+    if action == ItemEvents.CREATE:
+        stat.add_create()
+    elif action == ItemEvents.UPDATE:
+        stat.add_update()
+    elif action == ItemEvents.DELETE:
+        stat.add_delete()
+
 
 @shared_task
 def link_success_handler(retval):
-    """Register task stats into invenio-stats"""
-    current_app.logger.info('[{0}] [{1} {2}] SUCCESS'.format(0, 'Harvest Task', retval[0]['task_id']))
+    """Register task stats into invenio-stats."""
+    current_app.logger.info(
+        '[{0}] [{1} {2}] SUCCESS'.format(
+            0, 'Harvest Task', retval[0]['task_id']))
     oaiharvest_finished.send(current_app._get_current_object(),
                              exec_data=retval[0], user_data=retval[1])
 
@@ -204,12 +220,13 @@ def link_error_handler(request, exc, traceback):
                                  'task_name': 'harvest',
                                  'repository_name': 'weko',  # TODO: Grab from config
                                  'task_id': request.id
-                             },
-                             user_data=args[2])
+    },
+        user_data=args[2])
 
 
 @shared_task
 def run_harvesting(id, start_time, user_data):
+    """Run harvest."""
     current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
     # For registering runtime stats
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
@@ -220,6 +237,7 @@ def run_harvesting(id, start_time, user_data):
     if not rtoken:
         harvesting.item_processed = 0
     db.session.commit()
+    stat = RunStat.get('HarvestTask_' + str(harvesting.id))
     try:
         if int(harvesting.auto_distribution):
             sets = list_sets(harvesting.base_url)
@@ -230,7 +248,8 @@ def run_harvesting(id, start_time, user_data):
 
         def sigterm_handler(*args):
             nonlocal pause
-            pause=True
+            pause = True
+            stat.change_status(RunStat.Status.PAUSE)
         signal.signal(signal.SIGTERM, sigterm_handler)
         while True:
             records, rtoken = harvester_list_records(
@@ -244,17 +263,22 @@ def run_harvesting(id, start_time, user_data):
                                     0, 'Processing records'))
             for record in records:
                 try:
-                    process_item(record, harvesting)
-                except:
+                    process_item(record, harvesting, stat)
+                except BaseException:
                     db.session.rollback()
+                    stat.add_error()
             harvesting.resumption_token = rtoken
             db.session.commit()
-            if (not rtoken) or (pause == True):
+            if (not rtoken) or (pause is True):
                 break
+    except Exception as ex:
+        stat.change_status(RunStat.Status.ERROR, ex)
     finally:
         harvesting.task_id = None
         db.session.commit()
         end_time = datetime.now()
+        send_run_status_mail(end_time, harvesting, stat)
+        stat.delete()
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
         return ({'task_state': 'SUCCESS',
                  'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),

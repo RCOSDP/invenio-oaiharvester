@@ -22,6 +22,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 import codecs
+import enum
 import itertools
 import os
 import re
@@ -32,9 +33,88 @@ from datetime import datetime
 from flask import current_app
 from lxml import etree
 
+from invenio_cache.proxies import current_cache
+
 from .errors import InvenioOAIHarvesterConfigNotFound
 
 REGEXP_OAI_ID = re.compile(r"<identifier.*?>(.*?)</identifier>", re.DOTALL)
+
+
+class RunStat(object):
+    """Harvester running status/stat."""
+    def __init__(self, id):
+        """Init RunStat.
+
+        :param id: cache key
+        """
+        self.id = id
+        self.start_time = datetime.now()
+        self.processed_items = 0
+        self.created_items = 0
+        self.updated_items = 0
+        self.deleted_items = 0
+        self.error_items = 0
+        self.status = self.Status.SUCCESS
+        self.err_msg = ''
+        setattr(current_cache, id, self)
+
+    @classmethod
+    def get(self, id):
+        """Get status/stat from cache.
+
+        :param id: cache key
+        """
+        try:
+            stat = getattr(current_cache, id)
+        except BaseException:
+            stat = RunStat(id)
+        return stat
+
+    def delete(self):
+        """Delete cache data."""
+        if hasattr(current_cache, self.id):
+            delattr(current_cache, self.id)
+
+    def add_process(self):
+        self.processed_items += 1
+        setattr(current_cache, self.id, self)
+
+    def add_create(self):
+        self.created_items += 1
+        setattr(current_cache, self.id, self)
+
+    def add_update(self):
+        self.updated_items += 1
+        setattr(current_cache, self.id, self)
+
+    def add_delete(self):
+        self.deleted_items += 1
+        setattr(current_cache, self.id, self)
+
+    def add_error(self):
+        self.error_items += 1
+        setattr(current_cache, self.id, self)
+
+    def change_status(self, status, err_msg=''):
+        self.status = status
+        self.err_msg = err_msg
+        setattr(current_cache, self.id, self)
+
+    class Status(enum.IntEnum):
+        """Harvester running status."""
+        SUCCESS = 0
+        CANCEL = 1
+        PAUSE = 2
+        ERROR = 9
+
+
+class ItemEvents(enum.IntEnum):
+    """Item process event."""
+    INIT = 0
+    CREATE = 1
+    UPDATE = 2
+    DELETE = 3
+    ERROR = 9
 
 
 def record_extraction_from_file(

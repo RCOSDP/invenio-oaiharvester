@@ -69,6 +69,7 @@ for name, reqs in extras_require.items():
 
 setup_requires = [
     'pytest-runner>=2.6.2',
+    'Babel>=1.3',
 ]
 
 install_requires = [
@@ -113,6 +114,9 @@ setup(
         ],
         'invenio_db.models': [
             'invenio_oaiharvester = invenio_oaiharvester.models',
+        ],
+        'invenio_i18n.translations': [
+            'messages = invenio_oaiharvester',
         ],
     },
     extras_require=extras_require,
