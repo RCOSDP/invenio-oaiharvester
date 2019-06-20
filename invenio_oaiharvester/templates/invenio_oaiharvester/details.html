@@ -1,0 +1,75 @@
+{#
+# This file is part of WEKO3.
+# Copyright (C) 2017 National Institute of Informatics.
+#                                                                                                                                           # WEKO3
+is free software; you can redistribute it
+# and/or modify it under the terms of the GNU General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# WEKO3 is distributed in the hope that it will be
+# useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with WEKO3; if not, write to the
+# Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+# MA 02111-1307, USA.
+#}
+
+{% extends 'admin/model/details.html' %}
+
+{% block body %}
+{{ super() }}
+</br>
+<h4>Running logs</h4>
+<table id='logs_table' class='table table-striped table-bordered table-hover'>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Start Time</th>
+      <th>End time</th>
+      <th>Status</th>
+      <th>Error Message, Url</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<script>
+function createRow(count, start_time, end_time, status, errmsg, requrl) {
+  var table = document.getElementById('logs_table').getElementsByTagName('tbody')[0];
+  var row = table.insertRow();
+  row.insertCell().innerHTML = count;
+  row.insertCell().innerHTML = start_time;
+  row.insertCell().innerHTML = end_time;
+  row.insertCell().innerHTML = status;
+  if (errmsg) { 
+    row.insertCell().innerText = errmsg + '\n' + requrl;
+  } else {
+    row.insertCell().innerText = '';
+  }
+}
+
+function processLogs() {
+  var logs_url = window.location.href.replace('details', 'get_logs')
+  $.getJSON(logs_url, function(data) {
+    for (i = 0; i < data.length; ++i) { 
+        createRow(
+            i + 1, 
+            data[i]['start_time'],
+            data[i]['end_time'],
+            data[i]['status'],
+            data[i]['errmsg'],
+            data[i]['requrl']
+        );
+    }
+  })
+}
+
+window.addEventListener('load', processLogs)
+</script>
+{% endblock %}
+
