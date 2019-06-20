@@ -286,7 +286,7 @@ def run_harvesting(id, start_time, user_data):
     except Exception as ex:
         harvest_log.status = 'Error'
         harvest_log.errmsg = str(ex)
-        harvest_logs.requrl = harvesting.base_url
+        harvest_log.requrl = harvesting.base_url
         harvesting.resumption_token = None
         stat.change_status(RunStat.Status.ERROR, ex)
     finally:
