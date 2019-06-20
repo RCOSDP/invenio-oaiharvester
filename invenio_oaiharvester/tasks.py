@@ -181,6 +181,7 @@ def process_item(record, harvesting, stat):
     else:
         json = mapper.map()
         json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
+        dep['_deposit']['status'] = 'draft'
         dep.update({'actions': 'publish', 'index': indexes}, json)
         dep.commit()
         dep.publish()
@@ -237,7 +238,8 @@ def run_harvesting(id, start_time, user_data):
     rtoken = harvesting.resumption_token
     if not rtoken:
         harvesting.item_processed = 0
-        harvest_log = HarvestLogs(harvest_setting_id=id, status='Running')
+        harvest_log = HarvestLogs(harvest_setting_id=id, status='Running',
+                                  start_time=datetime.now())
         db.session.add(harvest_log)
     else:
         harvest_log = \
