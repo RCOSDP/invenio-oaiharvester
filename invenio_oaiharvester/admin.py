@@ -26,7 +26,7 @@ from datetime import datetime
 
 import celery
 from enum import Enum
-from flask import current_app, flash, redirect, request, session, url_for
+from flask import current_app, flash, redirect, request, session, url_for, jsonify
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
 from flask_babelex import gettext as _
@@ -36,7 +36,7 @@ from invenio_db import db
 from markupsafe import Markup
 
 from .api import send_run_status_mail
-from .models import HarvestSettings
+from .models import HarvestSettings, HarvestLogs
 from .utils import RunStat
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
@@ -129,10 +129,27 @@ class HarvestSettingView(ModelView):
         harvesting.task_id = None
         harvesting.resumption_token = None
         harvesting.item_processed = 0
+        harvest_log = \
+            HarvestLogs.query.filter_by(harvest_setting_id=harvesting.id).order_by(HarvestLogs.id.desc()).first()
+        harvest_log.status = 'Stop'
         db.session.commit()
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))
 
+    @expose('/get_logs/')
+    def get_logs(self):
+        """Get Logs"""
+        logs = HarvestLogs.query.filter_by(
+            harvest_setting_id = \
+                request.args.get('id')).order_by(HarvestLogs.id.desc()).limit(20).all()
+        res = []
+        for log in logs:
+            log.__dict__.pop('_sa_instance_state')
+            res.append(log.__dict__)
+        return jsonify(res)
+
+
+    details_template = 'invenio_oaiharvester/details.html'
     can_create = True
     can_delete = True
     can_edit = True

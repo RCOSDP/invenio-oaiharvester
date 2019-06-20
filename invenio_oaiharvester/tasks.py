@@ -41,7 +41,7 @@ from .api import get_records, list_records, send_run_status_mail
 from .harvester import DCMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
-from .models import HarvestSettings
+from .models import HarvestSettings, HarvestLogs
 from .signals import oaiharvest_finished
 from .utils import get_identifier_names, RunStat, ItemEvents
 
@@ -183,6 +183,7 @@ def process_item(record, harvesting, stat):
         json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
         dep.update({'actions': 'publish', 'index': indexes}, json)
         dep.commit()
+        dep.publish()
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
 
@@ -236,6 +237,12 @@ def run_harvesting(id, start_time, user_data):
     rtoken = harvesting.resumption_token
     if not rtoken:
         harvesting.item_processed = 0
+        harvest_log = HarvestLogs(harvest_setting_id=id, status='Running')
+        db.session.add(harvest_log)
+    else:
+        harvest_log = \
+            HarvestLogs.query(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
+        harvest_log.status = 'Running'
     db.session.commit()
     stat = RunStat.get('HarvestTask_' + str(harvesting.id))
     try:
@@ -264,14 +271,23 @@ def run_harvesting(id, start_time, user_data):
             for record in records:
                 try:
                     process_item(record, harvesting, stat)
-                except BaseException:
+                except Exception:
                     db.session.rollback()
                     stat.add_error()
             harvesting.resumption_token = rtoken
             db.session.commit()
-            if (not rtoken) or (pause is True):
+            if not rtoken:
+                harvest_log.end_time = datetime.now()
+                harvest_log.status = 'Completed'
+                break
+            elif pause is True:
+                harvest_log.status = 'Pause'
                 break
     except Exception as ex:
+        harvest_log.status = 'Error'
+        harvest_log.errmsg = str(ex)
+        harvest_logs.requrl = harvesting.base_url
+        harvesting.resumption_token = None
         stat.change_status(RunStat.Status.ERROR, ex)
     finally:
         harvesting.task_id = None
