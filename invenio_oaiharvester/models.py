@@ -100,5 +100,19 @@ class HarvestSettings(db.Model):
     resumption_token = db.Column(db.String(255), default=None)
 
 
+class HarvestLogs(db.Model):
+    """Harvest Logs"""
+    __tablename__ = "harvest_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    harvest_setting_id = db.Column(db.Integer, nullable=False)
+    start_time = db.Column(db.DateTime, default=datetime.datetime.now())
+    end_time = db.Column(db.DateTime, nullable=True)
+    status = db.Column(db.String(10), nullable=False, default='Running')
+    errmsg = db.Column(db.String(255), nullable=True, default=None)
+    requrl = db.Column(db.String(255), nullable=True, default=None)
+
+
 __all__ = ('OAIHarvestConfig',
-           'HarvestSettings')
+           'HarvestSettings',
+           'HarvestLogs')
