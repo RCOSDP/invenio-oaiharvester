@@ -243,7 +243,7 @@ def run_harvesting(id, start_time, user_data):
         db.session.add(harvest_log)
     else:
         harvest_log = \
-            HarvestLogs.query(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
+            HarvestLogs.query.filter_by(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
         harvest_log.status = 'Running'
     db.session.commit()
     stat = RunStat.get('HarvestTask_' + str(harvesting.id))
