@@ -29,6 +29,7 @@ import dateutil
 from celery import current_task, shared_task
 from celery.utils.log import get_task_logger
 from flask import current_app
+from flask_babelex import gettext as _
 from invenio_db import db
 from invenio_pidstore.models import PersistentIdentifier, PIDStatus
 from invenio_records.models import RecordMetadata
@@ -43,7 +44,7 @@ from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
 from .models import HarvestSettings, HarvestLogs
 from .signals import oaiharvest_finished
-from .utils import get_identifier_names, RunStat, ItemEvents
+from .utils import get_identifier_names, ItemEvents
 
 logger = get_task_logger(__name__)
 
@@ -137,10 +138,17 @@ def map_indexes(index_specs, parent_id):
     return res
 
 
-def process_item(record, harvesting, stat):
+def event_counter(event_name, counter):
+    if event_name in counter:
+        counter[event_name] = counter[event_name] + 1
+    else:
+        counter[event_name] = 1
+
+
+def process_item(record, harvesting, counter):
     """Process item."""
-    stat.add_process()
-    action = ItemEvents.INIT
+    event_counter('processed_items', counter)
+    event = ItemEvents.INIT
     xml = etree.tostring(record, encoding='utf-8').decode()
     mapper = DCMapper(xml)
     hvstid = PersistentIdentifier.query.filter_by(
@@ -153,7 +161,7 @@ def process_item(record, harvesting, stat):
         pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
-        action = ItemEvents.UPDATE
+        event = ItemEvents.UPDATE
     elif mapper.is_deleted():
         return
     else:
@@ -163,7 +171,7 @@ def process_item(record, harvesting, stat):
                                     object_type=dep.pid.object_type,
                                     object_uuid=dep.pid.object_uuid)
         indexes = []
-        action = ItemEvents.CREATE
+        event = ItemEvents.CREATE
     if int(harvesting.auto_distribution):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
@@ -177,7 +185,7 @@ def process_item(record, harvesting, stat):
     if mapper.is_deleted():
         recid.status = PIDStatus.DELETED
         dep.indexer.delete(dep)
-        action = ItemEvents.DELETE
+        event = ItemEvents.DELETE
     else:
         json = mapper.map()
         json['$schema'] = '/items/jsonschema/' + str(mapper.itemtype.id)
@@ -188,12 +196,12 @@ def process_item(record, harvesting, stat):
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
 
-    if action == ItemEvents.CREATE:
-        stat.add_create()
-    elif action == ItemEvents.UPDATE:
-        stat.add_update()
-    elif action == ItemEvents.DELETE:
-        stat.add_delete()
+    if event == ItemEvents.CREATE:
+        event_counter('created_items', counter)
+    elif event == ItemEvents.UPDATE:
+        event_counter('updated_items', counter)
+    elif event == ItemEvents.DELETE:
+        event_counter('deleted_items', counter)
 
 
 @shared_task
@@ -236,17 +244,24 @@ def run_harvesting(id, start_time, user_data):
     harvesting = HarvestSettings.query.filter_by(id=id).first()
     harvesting.task_id = current_task.request.id
     rtoken = harvesting.resumption_token
+    counter = {}
     if not rtoken:
         harvesting.item_processed = 0
+        counter['processed_items'] = 0
+        counter['created_items'] = 0
+        counter['updated_items'] = 0
+        counter['deleted_items'] = 0
+        counter['error_items'] = 0
         harvest_log = HarvestLogs(harvest_setting_id=id, status='Running',
-                                  start_time=datetime.now())
+                                  start_time=datetime.now(), counter=counter)
         db.session.add(harvest_log)
     else:
         harvest_log = \
             HarvestLogs.query.filter_by(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
+        harvest_log.end_time = None
         harvest_log.status = 'Running'
+        counter = harvest_log.counter
     db.session.commit()
-    stat = RunStat.get('HarvestTask_' + str(harvesting.id))
     try:
         if int(harvesting.auto_distribution):
             sets = list_sets(harvesting.base_url)
@@ -258,7 +273,6 @@ def run_harvesting(id, start_time, user_data):
         def sigterm_handler(*args):
             nonlocal pause
             pause = True
-            stat.change_status(RunStat.Status.PAUSE)
         signal.signal(signal.SIGTERM, sigterm_handler)
         while True:
             records, rtoken = harvester_list_records(
@@ -272,32 +286,31 @@ def run_harvesting(id, start_time, user_data):
                                     0, 'Processing records'))
             for record in records:
                 try:
-                    process_item(record, harvesting, stat)
+                    process_item(record, harvesting, counter)
                 except Exception:
                     db.session.rollback()
-                    stat.add_error()
+                    event_counter('error_items', counter)
             harvesting.resumption_token = rtoken
             db.session.commit()
             if not rtoken:
-                harvest_log.end_time = datetime.now()
-                harvest_log.status = 'Completed'
+                harvest_log.status = 'Successful'
                 break
             elif pause is True:
-                harvest_log.status = 'Pause'
+                harvest_log.status = 'Suspended'
                 break
     except Exception as ex:
-        harvest_log.status = 'Error'
+        harvest_log.status = 'Failed'
         harvest_log.errmsg = str(ex)
         harvest_log.requrl = harvesting.base_url
         harvesting.resumption_token = None
-        stat.change_status(RunStat.Status.ERROR, ex)
     finally:
         harvesting.task_id = None
-        db.session.commit()
         end_time = datetime.now()
-        send_run_status_mail(end_time, harvesting, stat)
-        stat.delete()
+        harvest_log.end_time = end_time
+        harvest_log.counter = counter
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
+        send_run_status_mail(harvesting, harvest_log)
+        db.session.commit()
         return ({'task_state': 'SUCCESS',
                  'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%S%z'),
                  'end_time': end_time.strftime('%Y-%m-%dT%H:%M:%S%z'),

@@ -26,6 +26,8 @@ import enum
 
 from flask import current_app
 from invenio_db import db
+from sqlalchemy.dialects import postgresql
+from sqlalchemy_utils.types import JSONType
 from weko_index_tree.models import Index
 
 
@@ -111,6 +113,20 @@ class HarvestLogs(db.Model):
     status = db.Column(db.String(10), nullable=False, default='Running')
     errmsg = db.Column(db.String(255), nullable=True, default=None)
     requrl = db.Column(db.String(255), nullable=True, default=None)
+    counter = db.Column(
+        db.JSON().with_variant(
+            postgresql.JSONB(none_as_null=True),
+            'postgresql',
+        ).with_variant(
+            JSONType(),
+            'sqlite',
+        ).with_variant(
+            JSONType(),
+            'mysql',
+        ),
+        default=lambda: dict(),
+        nullable=True
+    )
 
 
 __all__ = ('OAIHarvestConfig',

@@ -28,10 +28,15 @@ is free software; you can redistribute it
   <thead>
     <tr>
       <th>#</th>
-      <th>Start Time</th>
-      <th>End time</th>
-      <th>Status</th>
-      <th>Error Message, Url</th>
+      <th>{{_('Start Time')}}</th>
+      <th>{{_('End Time')}}</th>
+      <th>{{_('Status')}}</th>
+      <th>{{_('Processed Items')}}</th>
+      <th>{{_('Created Items')}}</th>
+      <th>{{_('Updated Items')}}</th>
+      <th>{{_('Deleted Items')}}</th>
+      <th>{{_('Error Items')}}</th>
+      <th>{{_('Error Message, Url')}}</th>
     </tr>
   </thead>
   <tbody>
@@ -39,13 +44,42 @@ is free software; you can redistribute it
 </table>
 
 <script>
-function createRow(count, start_time, end_time, status, errmsg, requrl) {
-  var table = document.getElementById('logs_table').getElementsByTagName('tbody')[0];
-  var row = table.insertRow();
+function _(x) {
+    return x
+}
+
+function createRow(count, start_time, end_time, status, counter, errmsg, requrl) {
+  let table = document.getElementById('logs_table').getElementsByTagName('tbody')[0];
+  let row = table.insertRow();
+  let result = _('Running')
+  if (status == 'Successful') {
+      result = _('Successful')
+  } else if (status == 'Suspended') {
+      result = _('Suspended')
+  } else if (status == 'Failed') {
+      result = _('Failed')
+  } else if (status == 'Cancel') {
+      result = _('Cancel')
+  } else {
+      result = _('Running')
+  }
   row.insertCell().innerHTML = count;
   row.insertCell().innerHTML = start_time;
   row.insertCell().innerHTML = end_time;
-  row.insertCell().innerHTML = status;
+  row.insertCell().innerHTML = result;
+  if (status == 'Running') {
+      row.insertCell().innerHTML = '';
+      row.insertCell().innerHTML = '';
+      row.insertCell().innerHTML = '';
+      row.insertCell().innerHTML = '';
+      row.insertCell().innerHTML = '';
+  } else {
+      row.insertCell().innerHTML = counter['processed_items'] ? counter['processed_items'] : 0;
+      row.insertCell().innerHTML = counter['created_items'] ? counter['created_items'] : 0;
+      row.insertCell().innerHTML = counter['updated_items'] ? counter['updated_items'] : 0;
+      row.insertCell().innerHTML = counter['deleted_items'] ? counter['deleted_items'] : 0;
+      row.insertCell().innerHTML = counter['error_items'] ? counter['error_items'] : 0;
+  }
   if (errmsg) { 
     row.insertCell().innerText = errmsg + '\n' + requrl;
   } else {
@@ -54,7 +88,7 @@ function createRow(count, start_time, end_time, status, errmsg, requrl) {
 }
 
 function processLogs() {
-  var logs_url = window.location.href.replace('details', 'get_logs')
+  let logs_url = window.location.href.replace('details', 'get_logs')
   $.getJSON(logs_url, function(data) {
     for (i = 0; i < data.length; ++i) { 
         createRow(
@@ -62,6 +96,7 @@ function processLogs() {
             data[i]['start_time'],
             data[i]['end_time'],
             data[i]['status'],
+            data[i]['counter'],
             data[i]['errmsg'],
             data[i]['requrl']
         );

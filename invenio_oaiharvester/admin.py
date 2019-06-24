@@ -37,7 +37,6 @@ from markupsafe import Markup
 
 from .api import send_run_status_mail
 from .models import HarvestSettings, HarvestLogs
-from .utils import RunStat
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
 
@@ -122,16 +121,14 @@ class HarvestSettingView(ModelView):
         """Clear harvesting."""
         harvesting = HarvestSettings.query.filter_by(
             id=request.args.get('id')).first()
-        stat = RunStat.get('HarvestTask_' + str(harvesting.id))
-        stat.change_status(RunStat.Status.CANCEL)
-        send_run_status_mail(datetime.now(), harvesting, stat)
-        stat.delete()
         harvesting.task_id = None
         harvesting.resumption_token = None
         harvesting.item_processed = 0
         harvest_log = \
             HarvestLogs.query.filter_by(harvest_setting_id=harvesting.id).order_by(HarvestLogs.id.desc()).first()
-        harvest_log.status = 'Stop'
+        harvest_log.status = 'Cancel'
+        harvest_log.end_time = datetime.now()
+        send_run_status_mail(harvesting, harvest_log)
         db.session.commit()
         return redirect(url_for('harvestsettings.details_view',
                                 id=request.args.get('id')))

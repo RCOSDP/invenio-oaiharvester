@@ -44,7 +44,7 @@ from sickle.oaiexceptions import NoRecordsMatch
 from weko_accounts.api import get_user_info_by_role_name
 
 from .errors import NameOrUrlMissing, WrongDateCombination
-from .utils import get_oaiharvest_object, RunStat
+from .utils import get_oaiharvest_object
 from .models import HarvestSettings
 
 
@@ -173,17 +173,17 @@ def get_info_by_oai_name(name):
     return obj.baseurl, obj.metadataprefix, lastrun, obj.setspecs
 
 
-def send_run_status_mail(end_time, harvesting, stat):
+def send_run_status_mail(harvesting, harvest_log):
     """Send harvest runnig status mail."""
     try:
-        result = ''
-        if stat.status == RunStat.Status.SUCCESS:
+        result = _('Running')
+        if harvest_log.status == 'Successful':
             result = _('Successful')
-        elif stat.status == RunStat.Status.PAUSE:
+        elif harvest_log.status == 'Suspended':
             result = _('Suspended')
-        elif stat.status == RunStat.Status.CANCEL:
+        elif harvest_log.status == 'Cancel':
             result = _('Cancel')
-        elif stat.status == RunStat.Status.ERROR:
+        elif harvest_log.status == 'Failed':
             result = _('Failed')
         # mail title
         subject = _('harvester running status') + \
@@ -198,16 +198,23 @@ def send_run_status_mail(end_time, harvesting, stat):
         for user in users:
             mail_list.append(user.email)
 
-        update_style = \
+        update_style_name = \
             HarvestSettings.UpdateStyle(int(harvesting.update_style)).name
+        if update_style_name == 'Difference':
+            update_style = _('Difference')
+        else:
+            update_style = _('Bulk')
+
         # send mail
         send_mail(subject, mail_list,
                   html=\
                   render_template('invenio_oaiharvester/run_stat_mail.html',
                                   result_text=result,
+                                  errmsg=harvest_log.errmsg,
                                   harvesting=harvesting,
-                                  stat=stat,
-                                  end_time=end_time,
+                                  counter=harvest_log.counter,
+                                  start_time=harvest_log.start_time,
+                                  end_time=harvest_log.end_time,
                                   update_style=update_style))
     except Exception as ex:
         current_app.logger.error(ex)

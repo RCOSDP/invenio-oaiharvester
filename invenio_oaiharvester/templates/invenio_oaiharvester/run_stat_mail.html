@@ -19,7 +19,7 @@
 #}
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_i18n.locale.language|safe }}" dir="{{current_i18n.locale.text_direction }}">
     <head>
         <meta charset="utf-8" />
     </head>
@@ -28,15 +28,15 @@
             <tr>
                 <th style="text-align: right;">{{_('Organization Name')}}</th>
                 <td style="width:1%"></td>
-                <td>{{_(config.THEME_SITENAME)}}</td>
+                <td>{{config.THEME_SITENAME}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Result')}}</th>
                 <td></td>
                 <td>
                     {{result_text}}
-                    {% if stat.status.name == 'ERROR' %}
-                    <p>{{stat.err_msg}}</p>
+                    {% if not errmsg == '' and not errmsg == None  %}
+                    <p>{{errmsg}}</p>
                     {% endif %}
                 </td>
             </tr>
@@ -48,7 +48,7 @@
             <tr>
                 <th style="text-align: right;">{{_('Start Time')}}</th>
                 <td></td>
-                <td>{{stat.start_time.strftime("%Y-%m-%d %H:%M:%S")}}</td>
+                <td>{{start_time.strftime("%Y-%m-%d %H:%M:%S")}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('End Time')}}</th>
@@ -58,27 +58,27 @@
             <tr>
                 <th style="text-align: right;">{{_('Processed Items')}}</th>
                 <td></td>
-                <td>{{stat.processed_items}}</td>
+                <td>{{counter['processed_items'] if 'processed_items' in counter else 0}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Created Items')}}</th>
                 <td></td>
-                <td>{{stat.created_items}}</td>
+                <td>{{counter['created_items'] if 'created_items' in counter else 0}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Updated Items')}}</th>
                 <td></td>
-                <td>{{stat.updated_items}}</td>
+                <td>{{counter['updated_items'] if 'updated_items' in counter else 0}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Deleted Items')}}</th>
                 <td></td>
-                <td>{{stat.deleted_items}}</td>
+                <td>{{counter['deleted_items'] if 'deleted_items' in counter else 0}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Error Items')}}</th>
                 <td></td>
-                <td>{{stat.error_items}}</td>
+                <td>{{counter['error_items'] if 'error_items' in counter else 0}}</td>
             </tr>
             <tr>
                 <th style="text-align: right;">{{_('Base Url')}}</th>
@@ -113,7 +113,7 @@
             <tr>
                 <th style="text-align: right;">{{_('Update Style')}}</th>
                 <td></td>
-                <td>{{_(update_style)}}</td>
+                <td>{{update_style}}</td>
             </tr>
         </table>
     </body>
