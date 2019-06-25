@@ -43,12 +43,33 @@ is free software; you can redistribute it
   </tbody>
 </table>
 
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">{{_('Setting')}}</h4>
+            </div>
+            <div class="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info close-button" data-dismiss="modal">
+                    <span class="glyphicon glyphicon-remove"></span>
+                    {{_('Close')}}
+                </button>
+            </div>
+        </div>
+    </div>
+</div><!-- /.modal -->
+
 <script>
 function _(x) {
     return x
 }
 
-function createRow(count, start_time, end_time, status, counter, errmsg, requrl) {
+function createRow(id, count, start_time, end_time, status, counter, errmsg, requrl) {
   let table = document.getElementById('logs_table').getElementsByTagName('tbody')[0];
   let row = table.insertRow();
   let result = _('Running')
@@ -63,7 +84,7 @@ function createRow(count, start_time, end_time, status, counter, errmsg, requrl)
   } else {
       result = _('Running')
   }
-  row.insertCell().innerHTML = count;
+  row.insertCell().innerHTML = '<a href="#" onclick="return check_detail(' + id + ')">' + count + '</a>';
   row.insertCell().innerHTML = start_time;
   row.insertCell().innerHTML = end_time;
   row.insertCell().innerHTML = result;
@@ -92,6 +113,7 @@ function processLogs() {
   $.getJSON(logs_url, function(data) {
     for (i = 0; i < data.length; ++i) { 
         createRow(
+            data[i]['id'],
             i + 1, 
             data[i]['start_time'],
             data[i]['end_time'],
@@ -102,6 +124,26 @@ function processLogs() {
         );
     }
   })
+}
+
+function check_detail(id) {
+    let logs_url = window.location.href.replace('details', 'get_log_detail/' + id.toString())
+    $.getJSON(logs_url, function(data) {
+        $('#myModal').modal('show');
+        let html = '';
+        html += '<table class="table table-hover table-bordered searchable">';
+        html += '<tr><td><b>' + _('Repository Name') + '</b></td><td>' + data.repository_name + '</td></tr>';
+        html += '<tr><td><b>' + _('Base Url') + '</b></td><td>' + data.base_url + '</td></tr>';
+        html += '<tr><td><b>' + _('From Date') + '</b></td><td>' + data.from_date + '</td></tr>';
+        html += '<tr><td><b>' + _('Until Date') + '</b></td><td>' + data.until_date + '</td></tr>';
+        html += '<tr><td><b>' + _('Set Spec') + '</b></td><td>' + data.set_spec + '</td></tr>';
+        html += '<tr><td><b>' + _('Metadata Prefix') + '</b></td><td>' + data.metadata_prefix + '</td></tr>';
+        html += '<tr><td><b>' + _('Target Index Name') + '</b></td><td>' + data.target_index + '</td></tr>';
+        html += '<tr><td><b>' + _('Update Style') + '</b></td><td>' + data.update_style + '</td></tr>';
+        html += '<tr><td><b>' + _('Auto Distribution') + '</b></td><td>' + data.auto_distribution + '</td></tr>';
+        html += '</table>';
+        $('.modal-body').html(html);
+    })
 }
 
 window.addEventListener('load', processLogs)

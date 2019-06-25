@@ -237,6 +237,19 @@ def link_error_handler(request, exc, traceback):
 @shared_task
 def run_harvesting(id, start_time, user_data):
     """Run harvest."""
+    def dump(setting):
+        setting_json = {}
+        setting_json['repository_name'] = setting.repository_name
+        setting_json['base_url'] = setting.base_url
+        setting_json['from_date'] = setting.from_date.strftime('%Y-%m-%d')
+        setting_json['until_date'] = setting.until_date.strftime('%Y-%m-%d')
+        setting_json['set_spec'] = setting.set_spec
+        setting_json['metadata_prefix'] = setting.metadata_prefix
+        setting_json['target_index'] = setting.target_index.index_name
+        setting_json['update_style'] = setting.update_style
+        setting_json['auto_distribution'] = setting.auto_distribution
+        return setting_json
+
     current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
     # For registering runtime stats
     start_time = datetime.strptime(start_time, '%Y-%m-%dT%H:%M:%S')
@@ -261,6 +274,7 @@ def run_harvesting(id, start_time, user_data):
         harvest_log.end_time = None
         harvest_log.status = 'Running'
         counter = harvest_log.counter
+    harvest_log.setting = dump(harvesting)
     db.session.commit()
     try:
         if int(harvesting.auto_distribution):

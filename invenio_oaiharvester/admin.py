@@ -145,6 +145,12 @@ class HarvestSettingView(ModelView):
             res.append(log.__dict__)
         return jsonify(res)
 
+    @expose('/get_log_detail/<id>/')
+    def get_log_detail(self, id):
+        """Get log detail."""
+        log = HarvestLogs.query.filter_by(id=id).first()
+        return jsonify(log.setting)
+
 
     details_template = 'invenio_oaiharvester/details.html'
     can_create = True

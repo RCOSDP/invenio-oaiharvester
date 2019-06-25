@@ -127,6 +127,20 @@ class HarvestLogs(db.Model):
         default=lambda: dict(),
         nullable=True
     )
+    setting = db.Column(
+        db.JSON().with_variant(
+            postgresql.JSONB(none_as_null=True),
+            'postgresql',
+        ).with_variant(
+            JSONType(),
+            'sqlite',
+        ).with_variant(
+            JSONType(),
+            'mysql',
+        ),
+        default=lambda: dict(),
+        nullable=True
+    )
 
 
 __all__ = ('OAIHarvestConfig',
