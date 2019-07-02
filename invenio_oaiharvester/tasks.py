@@ -334,3 +334,16 @@ def run_harvesting(id, start_time, user_data):
                  'repository_name': 'weko',  # TODO: Set and Grab from config
                  'task_id': run_harvesting.request.id},
                 user_data)
+
+
+@shared_task(ignore_results=True)
+def check_schedules_and_run():
+    settings = HarvestSettings.query.all()
+    now = datetime.now()
+    for h in settings:
+        if h.schedule_enable == True:
+            if (h.schedule_frequency == 'daily') or \
+               (h.schedule_frequency == 'weekly' and h.schedule_details == now.weekday()) or \
+               (h.schedule_frequency == 'monthly' and h.schedule_details == now.day):
+                run_harvesting.delay(h.id, now.strftime('%Y-%m-%dT%H:%M:%S%z'), {})
+

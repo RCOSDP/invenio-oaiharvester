@@ -152,7 +152,37 @@ class HarvestSettingView(ModelView):
         return jsonify(log.setting)
 
 
+    @expose('/set_schedule/<id>/', methods=['POST'])
+    def set_schedule(self, id):
+        harvesting = HarvestSettings.query.filter_by(
+            id=id).first()
+        harvesting.schedule_enable = eval(request.form['dis_enable_schedule'])
+        harvesting.schedule_frequency = request.form['frequency']
+        if harvesting.schedule_frequency == 'weekly':
+            harvesting.schedule_details = request.form['weekly_details']
+        elif harvesting.schedule_frequency == 'monthly':
+            harvesting.schedule_details = request.form['monthly_details']
+        db.session.commit()
+        return redirect(url_for('harvestsettings.edit_view', id=id))
+
+
+    @expose('/edit/', methods=('GET', 'POST'))
+    def edit_view(self):
+        harvesting = HarvestSettings.query.filter_by(
+            id=request.args.get('id')).first()
+        self._template_args['current_schedule'] = {
+            'frequency' : harvesting.schedule_frequency,
+            'details' : harvesting.schedule_details,
+            'enabled' : harvesting.schedule_enable}
+        self._template_args['days_of_week'] = [_('Monday'), _('Tuesday'), _('Wednesday'),
+                                               _('Thursday'), _('Friday'), _('Saturday'),
+                                               _('Sunday')]
+        self._template_args['frequency_options'] = ['daily', 'weekly', 'monthly']
+        return super(HarvestSettingView, self).edit_view()
+
+
     details_template = 'invenio_oaiharvester/details.html'
+    edit_template = 'invenio_oaiharvester/edit.html'
     can_create = True
     can_delete = True
     can_edit = True
