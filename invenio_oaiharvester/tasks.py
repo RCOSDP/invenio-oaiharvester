@@ -303,7 +303,9 @@ def run_harvesting(id, start_time, user_data):
             for record in records:
                 try:
                     process_item(record, harvesting, counter)
-                except Exception:
+                except Exception as ex:
+                    current_app.logger.error(
+                        'Error occurred while creating harvesting item\n' + str(ex))
                     db.session.rollback()
                     event_counter('error_items', counter)
             harvesting.resumption_token = rtoken
