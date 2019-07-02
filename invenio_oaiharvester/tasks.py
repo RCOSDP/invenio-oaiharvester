@@ -241,8 +241,10 @@ def run_harvesting(id, start_time, user_data):
         setting_json = {}
         setting_json['repository_name'] = setting.repository_name
         setting_json['base_url'] = setting.base_url
-        setting_json['from_date'] = setting.from_date.strftime('%Y-%m-%d')
-        setting_json['until_date'] = setting.until_date.strftime('%Y-%m-%d')
+        setting_json['from_date'] = \
+            setting.from_date.strftime('%Y-%m-%d') if setting.from_date else ''
+        setting_json['until_date'] = \
+            setting.until_date.strftime('%Y-%m-%d') if setting.until_date else ''
         setting_json['set_spec'] = setting.set_spec
         setting_json['metadata_prefix'] = setting.metadata_prefix
         setting_json['target_index'] = setting.target_index.index_name
