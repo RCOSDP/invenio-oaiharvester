@@ -318,7 +318,8 @@ def run_harvesting(id, start_time, user_data):
                 break
     except Exception as ex:
         harvest_log.status = 'Failed'
-        harvest_log.errmsg = str(ex)
+        current_app.logger.error(str(ex))
+        harvest_log.errmsg = str(ex)[:255]
         harvest_log.requrl = harvesting.base_url
         harvesting.resumption_token = None
     finally:
