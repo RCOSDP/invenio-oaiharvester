@@ -136,9 +136,10 @@ class HarvestSettingView(ModelView):
     @expose('/get_logs/')
     def get_logs(self):
         """Get Logs"""
+        number_of_histories = current_app.config['OAIHARVESTER_NUMBER_OF_HISTORIES']
         logs = HarvestLogs.query.filter_by(
             harvest_setting_id = \
-                request.args.get('id')).order_by(HarvestLogs.id.desc()).limit(20).all()
+                request.args.get('id')).order_by(HarvestLogs.id.desc()).limit(number_of_histories).all()
         res = []
         for log in logs:
             log.__dict__.pop('_sa_instance_state')
