@@ -34,6 +34,7 @@ from flask_login import current_user
 from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
+from weko_user_profiles.api import current_userprofile, localize_time
 
 from .api import send_run_status_mail
 from .models import HarvestSettings, HarvestLogs
@@ -143,6 +144,14 @@ class HarvestSettingView(ModelView):
         res = []
         for log in logs:
             log.__dict__.pop('_sa_instance_state')
+            start_time = log.__dict__['start_time']
+            end_time = log.__dict__['end_time']
+            if start_time:
+                start_time = localize_time(start_time)
+                log.__dict__['start_time'] = start_time.isoformat()
+            if end_time:
+                end_time = localize_time(end_time)
+                log.__dict__['end_time']= end_time.isoformat()
             res.append(log.__dict__)
         return jsonify(res)
 

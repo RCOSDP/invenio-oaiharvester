@@ -268,7 +268,7 @@ def run_harvesting(id, start_time, user_data):
         counter['deleted_items'] = 0
         counter['error_items'] = 0
         harvest_log = HarvestLogs(harvest_setting_id=id, status='Running',
-                                  start_time=datetime.now(), counter=counter)
+                                  start_time=datetime.utcnow(), counter=counter)
         db.session.add(harvest_log)
     else:
         harvest_log = \
@@ -324,7 +324,7 @@ def run_harvesting(id, start_time, user_data):
         harvesting.resumption_token = None
     finally:
         harvesting.task_id = None
-        end_time = datetime.now()
+        end_time = datetime.utcnow()
         harvest_log.end_time = end_time
         harvest_log.counter = counter
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
@@ -344,7 +344,7 @@ def run_harvesting(id, start_time, user_data):
 @shared_task(ignore_results=True)
 def check_schedules_and_run():
     settings = HarvestSettings.query.all()
-    now = datetime.now()
+    now = datetime.utcnow()
     for h in settings:
         if h.schedule_enable == True:
             if (h.schedule_frequency == 'daily') or \
