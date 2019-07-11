@@ -44,4 +44,4 @@ OAIHARVESTER_DEFAULT_AUTO_DISTRIBUTION = '0'
 """Default auto distribution option."""
 
 OAIHARVESTER_NUMBER_OF_HISTORIES = 20
-
+"""Default display number of histories."""

@@ -42,9 +42,9 @@ from .api import get_records, list_records, send_run_status_mail
 from .harvester import DCMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
-from .models import HarvestSettings, HarvestLogs
+from .models import HarvestLogs, HarvestSettings
 from .signals import oaiharvest_finished
-from .utils import get_identifier_names, ItemEvents
+from .utils import ItemEvents, get_identifier_names
 
 logger = get_task_logger(__name__)
 
@@ -139,6 +139,7 @@ def map_indexes(index_specs, parent_id):
 
 
 def event_counter(event_name, counter):
+    """Event counter."""
     if event_name in counter:
         counter[event_name] = counter[event_name] + 1
     else:
@@ -156,9 +157,10 @@ def process_item(record, harvesting, counter):
     if hvstid:
         r = RecordMetadata.query.filter_by(id=hvstid.object_uuid).first()
         recid = PersistentIdentifier.query.filter_by(
-            pid_type='recid',object_uuid=hvstid.object_uuid).first()
+            pid_type='recid', object_uuid=hvstid.object_uuid).first()
         recid.status = PIDStatus.REGISTERED
-        pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
+        pubdate = dateutil.parser.parse(
+            r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
         event = ItemEvents.UPDATE
@@ -176,7 +178,8 @@ def process_item(record, harvesting, counter):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
     else:
-        indexes.append(harvesting.index_id) if str(harvesting.index_id) not in indexes else None
+        indexes.append(harvesting.index_id) if str(
+            harvesting.index_id) not in indexes else None
 
     if hvstid and pubdate >= mapper.datestamp() and \
        indexes == dep['path'] and harvesting.update_style == '1':
@@ -244,7 +247,8 @@ def run_harvesting(id, start_time, user_data):
         setting_json['from_date'] = \
             setting.from_date.strftime('%Y-%m-%d') if setting.from_date else ''
         setting_json['until_date'] = \
-            setting.until_date.strftime('%Y-%m-%d') if setting.until_date else ''
+            setting.until_date.strftime(
+                '%Y-%m-%d') if setting.until_date else ''
         setting_json['set_spec'] = setting.set_spec
         setting_json['metadata_prefix'] = setting.metadata_prefix
         setting_json['target_index'] = setting.target_index.index_name
@@ -272,7 +276,9 @@ def run_harvesting(id, start_time, user_data):
         db.session.add(harvest_log)
     else:
         harvest_log = \
-            HarvestLogs.query.filter_by(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
+            HarvestLogs.query.filter_by(
+                harvest_setting_id=id).order_by(
+                HarvestLogs.id.desc()).first()
         harvest_log.end_time = None
         harvest_log.status = 'Running'
         counter = harvest_log.counter
@@ -343,12 +349,13 @@ def run_harvesting(id, start_time, user_data):
 
 @shared_task(ignore_results=True)
 def check_schedules_and_run():
+    """Check schedules and run."""
     settings = HarvestSettings.query.all()
     now = datetime.utcnow()
     for h in settings:
-        if h.schedule_enable == True:
+        if h.schedule_enable is True:
             if (h.schedule_frequency == 'daily') or \
                (h.schedule_frequency == 'weekly' and h.schedule_details == now.weekday()) or \
                (h.schedule_frequency == 'monthly' and h.schedule_details == now.day):
-                run_harvesting.delay(h.id, now.strftime('%Y-%m-%dT%H:%M:%S%z'), {})
-
+                run_harvesting.delay(
+                    h.id, now.strftime('%Y-%m-%dT%H:%M:%S%z'), {})

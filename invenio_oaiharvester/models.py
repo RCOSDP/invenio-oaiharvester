@@ -110,7 +110,8 @@ class HarvestSettings(db.Model):
 
 
 class HarvestLogs(db.Model):
-    """Harvest Logs"""
+    """Harvest Logs."""
+
     __tablename__ = "harvest_logs"
 
     id = db.Column(db.Integer, primary_key=True)

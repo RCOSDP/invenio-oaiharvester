@@ -44,8 +44,8 @@ from sickle.oaiexceptions import NoRecordsMatch
 from weko_accounts.api import get_user_info_by_role_name
 
 from .errors import NameOrUrlMissing, WrongDateCombination
-from .utils import get_oaiharvest_object
 from .models import HarvestSettings
+from .utils import get_oaiharvest_object
 
 
 def _(x):
@@ -187,9 +187,9 @@ def send_run_status_mail(harvesting, harvest_log):
             result = _('Failed')
         # mail title
         subject = _('harvester running status') + \
-                   ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
-                                              harvesting.id,
-                                              result)
+            ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
+                                       harvesting.id,
+                                       result)
         # recipient mail list
         users = []
         users += get_user_info_by_role_name('Repository Administrator')
@@ -207,14 +207,13 @@ def send_run_status_mail(harvesting, harvest_log):
 
         # send mail
         send_mail(subject, mail_list,
-                  html=\
-                  render_template('invenio_oaiharvester/run_stat_mail.html',
-                                  result_text=result,
-                                  errmsg=harvest_log.errmsg,
-                                  harvesting=harvesting,
-                                  counter=harvest_log.counter,
-                                  start_time=harvest_log.start_time,
-                                  end_time=harvest_log.end_time,
-                                  update_style=update_style))
+                  html=render_template('invenio_oaiharvester/run_stat_mail.html',
+                                       result_text=result,
+                                       errmsg=harvest_log.errmsg,
+                                       harvesting=harvesting,
+                                       counter=harvest_log.counter,
+                                       start_time=harvest_log.start_time,
+                                       end_time=harvest_log.end_time,
+                                       update_style=update_style))
     except Exception as ex:
         current_app.logger.error(ex)
