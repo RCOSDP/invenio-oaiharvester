@@ -27,6 +27,7 @@ from datetime import datetime
 
 import dateutil
 from celery import current_task, shared_task
+from celery.task.control import inspect
 from celery.utils.log import get_task_logger
 from flask import current_app
 from flask_babelex import gettext as _
@@ -237,6 +238,16 @@ def link_error_handler(request, exc, traceback):
         user_data=args[2])
 
 
+def is_harvest_running(id, task_id):
+    actives = inspect().active()
+    for worker in actives:
+        for task in actives[worker]:
+            if task['name'] == 'invenio_oaiharvester.tasks.run_harvesting':
+                if eval(task['args'])[0] == str(id) and task['id'] != task_id:
+                    return True
+    return False
+
+
 @shared_task
 def run_harvesting(id, start_time, user_data):
     """Run harvest."""
@@ -255,6 +266,11 @@ def run_harvesting(id, start_time, user_data):
         setting_json['update_style'] = setting.update_style
         setting_json['auto_distribution'] = setting.auto_distribution
         return setting_json
+
+    if is_harvest_running(id, run_harvesting.request.id):
+        return ({'task_state': 'SUCCESS',
+                 'task_id': run_harvesting.request.id},
+                user_data)
 
     current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
     # For registering runtime stats
