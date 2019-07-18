@@ -101,9 +101,17 @@ class HarvestSettings(db.Model):
 
     resumption_token = db.Column(db.String(255), default=None)
 
+    schedule_enable = db.Column(db.Boolean, name='schedule_enable',
+                                default=False)
+
+    schedule_frequency = db.Column(db.String(16), default='daily')
+
+    schedule_details = db.Column(db.Integer, default=0)
+
 
 class HarvestLogs(db.Model):
-    """Harvest Logs"""
+    """Harvest Logs."""
+
     __tablename__ = "harvest_logs"
 
     id = db.Column(db.Integer, primary_key=True)

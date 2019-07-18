@@ -44,8 +44,8 @@ from sickle.oaiexceptions import NoRecordsMatch
 from weko_accounts.api import get_user_info_by_role_name
 
 from .errors import NameOrUrlMissing, WrongDateCombination
-from .utils import get_oaiharvest_object
 from .models import HarvestSettings
+from .utils import get_oaiharvest_object
 
 
 def _(x):
@@ -187,9 +187,9 @@ def send_run_status_mail(harvesting, harvest_log):
             result = _('Failed')
         # mail title
         subject = _('harvester running status') + \
-                   ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
-                                              harvesting.id,
-                                              result)
+            ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
+                                       harvesting.id,
+                                       result)
         # recipient mail list
         users = []
         users += get_user_info_by_role_name('Repository Administrator')

@@ -23,10 +23,11 @@
 import os
 import sys
 from datetime import datetime
+from enum import Enum
 
 import celery
-from enum import Enum
-from flask import current_app, flash, redirect, request, session, url_for, jsonify
+from flask import current_app, flash, jsonify, redirect, request, session, \
+    url_for
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
 from flask_babelex import gettext as _
@@ -34,9 +35,10 @@ from flask_login import current_user
 from invenio_admin.forms import LazyChoices
 from invenio_db import db
 from markupsafe import Markup
+from weko_user_profiles.api import current_userprofile, localize_time
 
 from .api import send_run_status_mail
-from .models import HarvestSettings, HarvestLogs
+from .models import HarvestLogs, HarvestSettings
 from .tasks import link_error_handler, link_success_handler, run_harvesting
 
 
@@ -51,11 +53,11 @@ def run_stats():
         if harvesting.task_id is None and harvesting.resumption_token is None:
             return Markup('Harvesting is not running')
         elif harvesting.task_id is None:
-            return Markup('Harvesting is paused with resumption token: ' +
-                          harvesting.resumption_token)
+            return Markup('Harvesting is paused with resumption token: '
+                          + harvesting.resumption_token)
         else:
-            return Markup('Harvesting is running at task id:' + harvesting.task_id +
-                          '</br>' + str(harvesting.item_processed) + ' items processed')
+            return Markup('Harvesting is running at task id:' + harvesting.task_id
+                          + '</br>' + str(harvesting.item_processed) + ' items processed')
     return object_formatter
 
 
@@ -125,7 +127,9 @@ class HarvestSettingView(ModelView):
         harvesting.resumption_token = None
         harvesting.item_processed = 0
         harvest_log = \
-            HarvestLogs.query.filter_by(harvest_setting_id=harvesting.id).order_by(HarvestLogs.id.desc()).first()
+            HarvestLogs.query.filter_by(
+                harvest_setting_id=harvesting.id).order_by(
+                HarvestLogs.id.desc()).first()
         harvest_log.status = 'Cancel'
         harvest_log.end_time = datetime.now()
         send_run_status_mail(harvesting, harvest_log)
@@ -135,13 +139,21 @@ class HarvestSettingView(ModelView):
 
     @expose('/get_logs/')
     def get_logs(self):
-        """Get Logs"""
+        """Get Logs."""
+        number_of_histories = current_app.config['OAIHARVESTER_NUMBER_OF_HISTORIES']
         logs = HarvestLogs.query.filter_by(
-            harvest_setting_id = \
-                request.args.get('id')).order_by(HarvestLogs.id.desc()).limit(20).all()
+            harvest_setting_id=request.args.get('id')).order_by(HarvestLogs.id.desc()).limit(number_of_histories).all()
         res = []
         for log in logs:
             log.__dict__.pop('_sa_instance_state')
+            start_time = log.__dict__['start_time']
+            end_time = log.__dict__['end_time']
+            if start_time:
+                start_time = localize_time(start_time)
+                log.__dict__['start_time'] = start_time.isoformat()
+            if end_time:
+                end_time = localize_time(end_time)
+                log.__dict__['end_time'] = end_time.isoformat()
             res.append(log.__dict__)
         return jsonify(res)
 
@@ -151,8 +163,39 @@ class HarvestSettingView(ModelView):
         log = HarvestLogs.query.filter_by(id=id).first()
         return jsonify(log.setting)
 
+    @expose('/set_schedule/<id>/', methods=['POST'])
+    def set_schedule(self, id):
+        """Set schedule."""
+        harvesting = HarvestSettings.query.filter_by(
+            id=id).first()
+        harvesting.schedule_enable = eval(request.form['dis_enable_schedule'])
+        harvesting.schedule_frequency = request.form['frequency']
+        if harvesting.schedule_frequency == 'weekly':
+            harvesting.schedule_details = request.form['weekly_details']
+        elif harvesting.schedule_frequency == 'monthly':
+            harvesting.schedule_details = request.form['monthly_details']
+        db.session.commit()
+        return redirect(url_for('harvestsettings.edit_view', id=id))
+
+    @expose('/edit/', methods=('GET', 'POST'))
+    def edit_view(self):
+        """Edit view."""
+        harvesting = HarvestSettings.query.filter_by(
+            id=request.args.get('id')).first()
+        self._template_args['current_schedule'] = {
+            'frequency': harvesting.schedule_frequency,
+            'details': harvesting.schedule_details,
+            'enabled': harvesting.schedule_enable}
+        self._template_args['days_of_week'] = [_('Monday'), _('Tuesday'), _('Wednesday'),
+                                               _('Thursday'), _(
+                                                   'Friday'), _('Saturday'),
+                                               _('Sunday')]
+        self._template_args['frequency_options'] = [
+            'daily', 'weekly', 'monthly']
+        return super(HarvestSettingView, self).edit_view()
 
     details_template = 'invenio_oaiharvester/details.html'
+    edit_template = 'invenio_oaiharvester/edit.html'
     can_create = True
     can_delete = True
     can_edit = True

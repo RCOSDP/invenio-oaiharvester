@@ -27,6 +27,7 @@ from datetime import datetime
 
 import dateutil
 from celery import current_task, shared_task
+from celery.task.control import inspect
 from celery.utils.log import get_task_logger
 from flask import current_app
 from flask_babelex import gettext as _
@@ -42,9 +43,9 @@ from .api import get_records, list_records, send_run_status_mail
 from .harvester import DCMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
-from .models import HarvestSettings, HarvestLogs
+from .models import HarvestLogs, HarvestSettings
 from .signals import oaiharvest_finished
-from .utils import get_identifier_names, ItemEvents
+from .utils import ItemEvents, get_identifier_names
 
 logger = get_task_logger(__name__)
 
@@ -139,6 +140,7 @@ def map_indexes(index_specs, parent_id):
 
 
 def event_counter(event_name, counter):
+    """Event counter."""
     if event_name in counter:
         counter[event_name] = counter[event_name] + 1
     else:
@@ -156,9 +158,10 @@ def process_item(record, harvesting, counter):
     if hvstid:
         r = RecordMetadata.query.filter_by(id=hvstid.object_uuid).first()
         recid = PersistentIdentifier.query.filter_by(
-            pid_type='recid',object_uuid=hvstid.object_uuid).first()
+            pid_type='recid', object_uuid=hvstid.object_uuid).first()
         recid.status = PIDStatus.REGISTERED
-        pubdate = dateutil.parser.parse(r.json['pubdate']['attribute_value']).date()
+        pubdate = dateutil.parser.parse(
+            r.json['pubdate']['attribute_value']).date()
         dep = WekoDeposit(r.json, r)
         indexes = dep['path'].copy()
         event = ItemEvents.UPDATE
@@ -176,7 +179,8 @@ def process_item(record, harvesting, counter):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
             indexes.append(i) if i not in indexes else None
     else:
-        indexes.append(harvesting.index_id) if str(harvesting.index_id) not in indexes else None
+        indexes.append(harvesting.index_id) if str(
+            harvesting.index_id) not in indexes else None
 
     if hvstid and pubdate >= mapper.datestamp() and \
        indexes == dep['path'] and harvesting.update_style == '1':
@@ -234,6 +238,16 @@ def link_error_handler(request, exc, traceback):
         user_data=args[2])
 
 
+def is_harvest_running(id, task_id):
+    actives = inspect().active()
+    for worker in actives:
+        for task in actives[worker]:
+            if task['name'] == 'invenio_oaiharvester.tasks.run_harvesting':
+                if eval(task['args'])[0] == str(id) and task['id'] != task_id:
+                    return True
+    return False
+
+
 @shared_task
 def run_harvesting(id, start_time, user_data):
     """Run harvest."""
@@ -241,14 +255,22 @@ def run_harvesting(id, start_time, user_data):
         setting_json = {}
         setting_json['repository_name'] = setting.repository_name
         setting_json['base_url'] = setting.base_url
-        setting_json['from_date'] = setting.from_date.strftime('%Y-%m-%d')
-        setting_json['until_date'] = setting.until_date.strftime('%Y-%m-%d')
+        setting_json['from_date'] = \
+            setting.from_date.strftime('%Y-%m-%d') if setting.from_date else ''
+        setting_json['until_date'] = \
+            setting.until_date.strftime(
+                '%Y-%m-%d') if setting.until_date else ''
         setting_json['set_spec'] = setting.set_spec
         setting_json['metadata_prefix'] = setting.metadata_prefix
         setting_json['target_index'] = setting.target_index.index_name
         setting_json['update_style'] = setting.update_style
         setting_json['auto_distribution'] = setting.auto_distribution
         return setting_json
+
+    if is_harvest_running(id, run_harvesting.request.id):
+        return ({'task_state': 'SUCCESS',
+                 'task_id': run_harvesting.request.id},
+                user_data)
 
     current_app.logger.info('[{0}] [{1}] START'.format(0, 'Harvesting'))
     # For registering runtime stats
@@ -266,11 +288,13 @@ def run_harvesting(id, start_time, user_data):
         counter['deleted_items'] = 0
         counter['error_items'] = 0
         harvest_log = HarvestLogs(harvest_setting_id=id, status='Running',
-                                  start_time=datetime.now(), counter=counter)
+                                  start_time=datetime.utcnow(), counter=counter)
         db.session.add(harvest_log)
     else:
         harvest_log = \
-            HarvestLogs.query.filter_by(harvest_setting_id=id).order_by(HarvestLogs.id.desc()).first()
+            HarvestLogs.query.filter_by(
+                harvest_setting_id=id).order_by(
+                HarvestLogs.id.desc()).first()
         harvest_log.end_time = None
         harvest_log.status = 'Running'
         counter = harvest_log.counter
@@ -301,7 +325,9 @@ def run_harvesting(id, start_time, user_data):
             for record in records:
                 try:
                     process_item(record, harvesting, counter)
-                except Exception:
+                except Exception as ex:
+                    current_app.logger.error(
+                        'Error occurred while processing harvesting item\n' + str(ex))
                     db.session.rollback()
                     event_counter('error_items', counter)
             harvesting.resumption_token = rtoken
@@ -314,12 +340,13 @@ def run_harvesting(id, start_time, user_data):
                 break
     except Exception as ex:
         harvest_log.status = 'Failed'
-        harvest_log.errmsg = str(ex)
+        current_app.logger.error(str(ex))
+        harvest_log.errmsg = str(ex)[:255]
         harvest_log.requrl = harvesting.base_url
         harvesting.resumption_token = None
     finally:
         harvesting.task_id = None
-        end_time = datetime.now()
+        end_time = datetime.utcnow()
         harvest_log.end_time = end_time
         harvest_log.counter = counter
         current_app.logger.info('[{0}] [{1}] END'.format(0, 'Harvesting'))
@@ -334,3 +361,17 @@ def run_harvesting(id, start_time, user_data):
                  'repository_name': 'weko',  # TODO: Set and Grab from config
                  'task_id': run_harvesting.request.id},
                 user_data)
+
+
+@shared_task(ignore_results=True)
+def check_schedules_and_run():
+    """Check schedules and run."""
+    settings = HarvestSettings.query.all()
+    now = datetime.utcnow()
+    for h in settings:
+        if h.schedule_enable is True:
+            if (h.schedule_frequency == 'daily') or \
+               (h.schedule_frequency == 'weekly' and h.schedule_details == now.weekday()) or \
+               (h.schedule_frequency == 'monthly' and h.schedule_details == now.day):
+                run_harvesting.delay(
+                    h.id, now.strftime('%Y-%m-%dT%H:%M:%S%z'), {})

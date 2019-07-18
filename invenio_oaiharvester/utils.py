@@ -31,9 +31,8 @@ from contextlib import closing
 from datetime import datetime
 
 from flask import current_app
-from lxml import etree
-
 from invenio_cache.proxies import current_cache
+from lxml import etree
 
 from .errors import InvenioOAIHarvesterConfigNotFound
 
@@ -42,6 +41,7 @@ REGEXP_OAI_ID = re.compile(r"<identifier.*?>(.*?)</identifier>", re.DOTALL)
 
 class ItemEvents(enum.IntEnum):
     """Item process event."""
+
     INIT = 0
     CREATE = 1
     UPDATE = 2
