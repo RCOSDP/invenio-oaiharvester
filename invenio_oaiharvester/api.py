@@ -186,10 +186,8 @@ def send_run_status_mail(harvesting, harvest_log):
         elif harvest_log.status == 'Failed':
             result = _('Failed')
         # mail title
-        subject = _('harvester running status') + \
-            ' [{0}({1})] [{2}]'.format(harvesting.repository_name,
-                                       harvesting.id,
-                                       result)
+        subject = '[{0}] '.format(current_app.config['THEME_SITENAME']) + \
+            _('Hervesting Result')
         # recipient mail list
         users = []
         users += get_user_info_by_role_name('Repository Administrator')
