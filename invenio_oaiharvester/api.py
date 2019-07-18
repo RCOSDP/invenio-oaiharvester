@@ -42,6 +42,7 @@ from invenio_mail.api import send_mail
 from sickle import Sickle
 from sickle.oaiexceptions import NoRecordsMatch
 from weko_accounts.api import get_user_info_by_role_name
+from weko_admin.models import AdminLangSettings
 
 from .errors import NameOrUrlMissing, WrongDateCombination
 from .models import HarvestSettings
@@ -204,9 +205,9 @@ def send_run_status_mail(harvesting, harvest_log):
             update_style = _('Bulk')
 
         with current_app.test_request_context() as ctx:
-            lang_code = current_app.config['BABEL_DEFAULT_LANGUAGE']
+            default_lang = AdminLangSettings.get_registered_language()[0]
             # setting locale
-            setattr(ctx, 'babel_locale', lang_code)
+            setattr(ctx, 'babel_locale', default_lang['lang_code'])
             # send mail
             send_mail(subject, mail_list,
                       html=\
@@ -218,6 +219,6 @@ def send_run_status_mail(harvesting, harvest_log):
                                       start_time=harvest_log.start_time,
                                       end_time=harvest_log.end_time,
                                       update_style=update_style,
-                                      lang_code=lang_code))
+                                      lang_code=default_lang['lang_code']))
     except Exception as ex:
         current_app.logger.error(ex)
