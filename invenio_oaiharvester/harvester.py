@@ -28,6 +28,7 @@ import requests
 from celery import shared_task
 from invenio_db import db
 from lxml import etree
+import xmltodict
 from weko_deposit.api import WekoDeposit
 from weko_records.models import ItemType
 
@@ -43,6 +44,10 @@ DEFAULT_FIELD = [
 
 def list_sets(url, encoding='utf-8'):
     """Get sets list."""
+    # Avoid SSLError - dh key too small
+    requests.packages.urllib3.disable_warnings()
+    requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += 'HIGH:!DH:!aNULL'
+
     sets = []
     payload = {
         'verb': 'ListSets'}
@@ -69,6 +74,10 @@ def list_records(
         resumption_token=None,
         encoding='utf-8'):
     """Get records list."""
+    # Avoid SSLError - dh key too small
+    requests.packages.urllib3.disable_warnings()
+    requests.packages.urllib3.util.ssl_.DEFAULT_CIPHERS += 'HIGH:!DH:!aNULL'
+
     payload = {
         'verb': 'ListRecords',
         'from': from_date,
@@ -352,9 +361,7 @@ def map_sets(sets, encoding='utf-8'):
     return res
 
 
-class DCMapper:
-    """DC Mapper."""
-
+class BaseMapper:
     itemtype_map = {}
 
     @classmethod
@@ -363,40 +370,56 @@ class DCMapper:
         for t in ItemType.query.all():
             cls.itemtype_map[t.item_type_name.name] = t
 
+
     def __init__(self, xml):
-        """Init."""
         self.xml = xml
-        m_type = '<dc:type.*>(.+?)</dc:type>'
-        type_tags = re.findall(m_type, self.xml)
-        self.itemtype = DCMapper.itemtype_map['Multiple']
-        for t in type_tags:
-            if t.lower() in RESOURCE_TYPE_MAP:
-                self.itemtype \
-                    = DCMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
-                break
+        self.json = xmltodict.parse(xml)
+        if not BaseMapper.itemtype_map:
+            BaseMapper.update_itemtype_map()
+        self.itemtype = BaseMapper.itemtype_map['Multiple']
+
 
     def is_deleted(self):
         """Check deleted."""
-        return '<header status="deleted">' in self.xml
+        return self.json['record']['header'].get('@status') == 'deleted'
+
 
     def identifier(self):
         """Get identifier."""
-        pattern = '<identifier>(.+?)</identifier>'
-        return re.search(pattern, self.xml).group(1)
+        return self.json['record']['header'].get('identifier')
+
 
     def datestamp(self):
         """Get datestamp."""
-        pattern = '<datestamp>(.+?)</datestamp>'
-        datestring = re.search(pattern, self.xml).group(1)
+        datestring = self.json['record']['header'].get('datestamp')
         return dateutil.parser.parse(datestring).date()
+
 
     def specs(self):
         """Get specs."""
-        pattern = '<setSpec>(.+?)</setSpec>'
-        return re.findall(pattern, self.xml)
+        s = self.json['record']['header'].get('setSpec')
+        return s if type(s) == list else [s]
+
+
+class DCMapper(BaseMapper):
+    """DC Mapper."""
+
+    def __init__(self, xml):
+        """Init."""
+        super().__init__(xml)
+
 
     def map(self):
         """Get map."""
+        if self.is_deleted():
+            return {}
+        type_tags = self.json['record']['metadata']['oai_dc:dc'].get('dc:type')
+        type_tags = type_tags if type(type_tags) == list else [type_tags]
+        for t in type_tags:
+            if t.lower() in RESOURCE_TYPE_MAP:
+                self.itemtype \
+                    = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
+                break
         res = {'$schema': self.itemtype.id,
                'pubdate': str(self.datestamp())}
         dc_tags = {
@@ -422,4 +445,28 @@ class DCMapper:
                 dc_tags[tag] = re.findall(m, self.xml)
                 for value in dc_tags[tag]:
                     add_funcs[tag](value)
+        return res
+
+
+class JPCOARMapper(BaseMapper):
+
+    def __init__(xml):
+        super().__init__(xml)
+        if self.is_deleted():
+            return
+
+
+    def map(self):
+        """Get map."""
+        if self.is_deleted():
+            return {}
+        type_tags = self.json['record']['metadata']['jpcoar:jpcoar'].get('dc:type')
+        type_tags = type_tags if type(type_tags) == list else [type_tags]
+        for t in type_tags:
+            if t.lower() in RESOURCE_TYPE_MAP:
+                self.itemtype \
+                    = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
+                break
+        res = {'$schema': self.itemtype.id,
+               'pubdate': str(self.datestamp())}
         return res
