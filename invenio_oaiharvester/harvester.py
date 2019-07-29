@@ -401,6 +401,16 @@ class BaseMapper:
         return s if type(s) == list else [s]
 
 
+    def map_itemtype(self, type_tag)
+        types = self.json['record']['metadata'][type_tag].get('dc:type')
+        types = types if type(types) == list else [types]
+        for t in types:
+            if t.lower() in RESOURCE_TYPE_MAP:
+                self.itemtype \
+                    = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
+                break
+
+
 class DCMapper(BaseMapper):
     """DC Mapper."""
 
@@ -413,13 +423,7 @@ class DCMapper(BaseMapper):
         """Get map."""
         if self.is_deleted():
             return {}
-        type_tags = self.json['record']['metadata']['oai_dc:dc'].get('dc:type')
-        type_tags = type_tags if type(type_tags) == list else [type_tags]
-        for t in type_tags:
-            if t.lower() in RESOURCE_TYPE_MAP:
-                self.itemtype \
-                    = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
-                break
+        self.map_itemtype('oai_dc:dc')
         res = {'$schema': self.itemtype.id,
                'pubdate': str(self.datestamp())}
         dc_tags = {
@@ -460,13 +464,7 @@ class JPCOARMapper(BaseMapper):
         """Get map."""
         if self.is_deleted():
             return {}
-        type_tags = self.json['record']['metadata']['jpcoar:jpcoar'].get('dc:type')
-        type_tags = type_tags if type(type_tags) == list else [type_tags]
-        for t in type_tags:
-            if t.lower() in RESOURCE_TYPE_MAP:
-                self.itemtype \
-                    = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
-                break
+        self.map_itemtype('jpcoar:jpcoar')
         res = {'$schema': self.itemtype.id,
                'pubdate': str(self.datestamp())}
         return res
