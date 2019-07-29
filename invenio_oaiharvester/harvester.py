@@ -401,7 +401,7 @@ class BaseMapper:
         return s if type(s) == list else [s]
 
 
-    def map_itemtype(self, type_tag)
+    def map_itemtype(self, type_tag):
         types = self.json['record']['metadata'][type_tag].get('dc:type')
         types = types if type(types) == list else [types]
         for t in types:
@@ -467,4 +467,6 @@ class JPCOARMapper(BaseMapper):
         self.map_itemtype('jpcoar:jpcoar')
         res = {'$schema': self.itemtype.id,
                'pubdate': str(self.datestamp())}
+        tags = []
+
         return res
