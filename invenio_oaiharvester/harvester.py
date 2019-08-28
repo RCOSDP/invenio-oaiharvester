@@ -25,10 +25,10 @@ from functools import partial
 
 import dateutil
 import requests
+import xmltodict
 from celery import shared_task
 from invenio_db import db
 from lxml import etree
-import xmltodict
 from weko_deposit.api import WekoDeposit
 from weko_records.models import ItemType
 
@@ -119,26 +119,29 @@ def get_newest_itemtype_info(type_name):
 
 
 def add_alternative(schema, res, alternative_list):
-    if type(alternative_list) != list:
+    """Add alternative."""
+    if not isinstance(alternative_list, list):
         alternative_list = [alternative_list]
     root_key = map_field(schema).get('Alternative Title')
     if not root_key:
         return
     res[root_key] = []
-    alternative_title = map_field(schema['properties'][root_key]['items'])['Alternative Title']
+    alternative_title = map_field(schema['properties'][root_key]['items'])[
+        'Alternative Title']
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in alternative_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[alternative_title] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[alternative_title] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_title(schema, res, title_list):
-    if type(title_list) != list:
+    """Add title."""
+    if not isinstance(title_list, list):
         title_list = [title_list]
     root_key = map_field(schema).get('Title')
     if not root_key:
@@ -148,9 +151,9 @@ def add_title(schema, res, title_list):
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in title_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[title] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[title] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
@@ -158,30 +161,35 @@ def add_title(schema, res, title_list):
 
 
 def add_description(schema, res, description_list):
-    if type(description_list) != list:
+    """Add description."""
+    if not isinstance(description_list, list):
         description_list = [description_list]
     root_key = map_field(schema).get('Description')
     if not root_key:
         return
     res[root_key] = []
-    description = map_field(schema['properties'][root_key]['items'])['Description']
-    description_type = map_field(schema['properties'][root_key]['items'])['Description Type']
+    description = map_field(schema['properties'][root_key]['items'])[
+        'Description']
+    description_type = map_field(schema['properties'][root_key]['items'])[
+        'Description Type']
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in description_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[description] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[description] = it.get('#text')
             item[description_type] = \
-                it.get('@descriptionType') if it.get('@descriptionType') else 'Other'
+                it.get('@descriptionType') if it.get(
+                    '@descriptionType') else 'Other'
             if it.get('@xml:lang'):
                 item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_creator_jpcoar(schema, res, creator_list):
-    if type(creator_list) != list:
+    """Add creator."""
+    if not isinstance(creator_list, list):
         creator_list = [creator_list]
     root_key = map_field(schema).get('Creator')
     if not root_key:
@@ -191,7 +199,8 @@ def add_creator_jpcoar(schema, res, creator_list):
     affiliation_key = map_field(item_schema)['Affiliation']
     creator_alternative_key = map_field(item_schema)['Creator Alternative']
     creator_name_key = map_field(item_schema)['Creator Name']
-    creator_name_identifier_key = map_field(item_schema)['Creator Name Identifier']
+    creator_name_identifier_key = map_field(
+        item_schema)['Creator Name Identifier']
     family_name_key = map_field(item_schema)['Family Name']
     given_name_key = map_field(item_schema)['Given Name']
     affiliation_name = map_field(
@@ -206,22 +215,23 @@ def add_creator_jpcoar(schema, res, creator_list):
     for it in creator_list:
         if 'jpcoar:creatorName' in it:
             item[creator_name_key] = []
-            if type(it['jpcoar:creatorName']) != list:
+            if not isinstance(it['jpcoar:creatorName'], list):
                 names = [it['jpcoar:creatorName']]
             else:
                 names = it['jpcoar:creatorName']
             for name in names:
-                if type(name) == str:
-                    item[creator_name_key].append({creator_name : name})
-                elif type(name) == OrderedDict:
+                if isinstance(name, str):
+                    item[creator_name_key].append({creator_name: name})
+                elif isinstance(name, OrderedDict):
                     item[creator_name_key].append({
-                        creator_name : name.get('#text'),
-                        creator_name_lang : name.get('@xml:lang')})
+                        creator_name: name.get('#text'),
+                        creator_name_lang: name.get('@xml:lang')})
         res[root_key].append(item)
 
 
 def add_contributor_jpcoar(schema, res, contributor_list):
-    if type(contributor_list) != list:
+    """Add contributor."""
+    if not isinstance(contributor_list, list):
         contributor_list = [contributor_list]
     root_key = map_field(schema).get('Contributor')
     if not root_key:
@@ -229,9 +239,11 @@ def add_contributor_jpcoar(schema, res, contributor_list):
     res[root_key] = []
     item_schema = schema['properties'][root_key]['items']
     affiliation_key = map_field(item_schema)['Affiliation']
-    contributor_alternative_key = map_field(item_schema)['Contributor Alternative']
+    contributor_alternative_key = map_field(
+        item_schema)['Contributor Alternative']
     contributor_name_key = map_field(item_schema)['Contributor Name']
-    contributor_name_identifier_key = map_field(item_schema)['Contributor Name Identifier']
+    contributor_name_identifier_key = map_field(
+        item_schema)['Contributor Name Identifier']
     family_name_key = map_field(item_schema)['Family Name']
     given_name_key = map_field(item_schema)['Given Name']
     affiliation_name = map_field(
@@ -246,21 +258,22 @@ def add_contributor_jpcoar(schema, res, contributor_list):
     for it in contributor_list:
         if 'jpcoar:contributorName' in it:
             item[contributor_name_key] = []
-            if type(it['jpcoar:contributorName']) != list:
+            if not isinstance(it['jpcoar:contributorName'], list):
                 names = [it['jpcoar:contributorName']]
             else:
                 names = it['jpcoar:contributorName']
             for name in names:
-                if type(name) == str:
-                    item[contributor_name_key].append({contributor_name : name})
-                elif type(name) == OrderedDict:
+                if isinstance(name, str):
+                    item[contributor_name_key].append({contributor_name: name})
+                elif isinstance(name, OrderedDict):
                     item[contributor_name_key].append({
-                        contributor_name : name.get('#text'),
-                        contributor_name_lang : name.get('@xml:lang')})
+                        contributor_name: name.get('#text'),
+                        contributor_name_lang: name.get('@xml:lang')})
         res[root_key].append(item)
 
 
 def add_access_rights(schema, res, accessRights):
+    """Add access rights."""
     root_key = map_field(schema).get('Access Rights')
     access_rights = map_field(
         schema['properties'][root_key])['Access Rights']
@@ -268,11 +281,12 @@ def add_access_rights(schema, res, accessRights):
         schema['properties'][root_key])['Access Rights Resource']
     res[root_key] = {
         access_rights: accessRights.get('#text'),
-        access_rights_resource : accessRights.get('@rdf:resource')}
+        access_rights_resource: accessRights.get('@rdf:resource')}
 
 
 def add_rights(schema, res, rights_list):
-    if type(rights_list) != list:
+    """Add rights."""
+    if not isinstance(rights_list, list):
         rights_list = [rights_list]
     root_key = map_field(schema).get('Rights')
     res[root_key] = []
@@ -287,9 +301,9 @@ def add_rights(schema, res, rights_list):
     for it in rights_list:
         item = {}
         item[rights] = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[rights][rights_text] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[rights][rights_text] = it.get('#text')
             if it.get('@xml:lang'):
                 item[rights][rights_lang] = it.get('@xml:lang')
@@ -298,7 +312,8 @@ def add_rights(schema, res, rights_list):
 
 
 def add_rightsholder(schema, res, rightsholder_list):
-    if type(rights_list) != list:
+    """Add rightsholder."""
+    if not isinstance(rights_list, list):
         rightsholder_list = [rightsholder_list]
     root_key = map_field(schema).get('Rights Holder')
     res[root_key] = []
@@ -309,7 +324,8 @@ def add_rightsholder(schema, res, rightsholder_list):
 
 
 def add_subject(schema, res, subject_list):
-    if type(subject_list) != list:
+    """Add subject."""
+    if not isinstance(subject_list, list):
         subject_list = [subject_list]
     root_key = map_field(schema).get('Subject')
     res[root_key] = []
@@ -323,9 +339,9 @@ def add_subject(schema, res, subject_list):
         schema['properties'][root_key]['items'])['Language']
     for it in subject_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[subject] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[subject] = it.get('#text')
             if it.get('@subjectScheme'):
                 item[subject_scheme] = it.get('@subjectScheme')
@@ -337,7 +353,8 @@ def add_subject(schema, res, subject_list):
 
 
 def add_publisher(schema, res, publisher_list):
-    if type(publisher_list) != list:
+    """Add publisher."""
+    if not isinstance(publisher_list, list):
         publisher_list = [publisher_list]
     root_key = map_field(schema).get('Publisher')
     if not root_key:
@@ -347,16 +364,17 @@ def add_publisher(schema, res, publisher_list):
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in publisher_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[publisher] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[publisher] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_identifier(schema, res, identifier_list):
-    if type(identifier_list) != list:
+    """Add identfier."""
+    if not isinstance(identifier_list, list):
         identifier_list = [identifier_list]
     root_key = map_field(schema).get('Identifier')
     res[root_key] = []
@@ -366,9 +384,9 @@ def add_identifier(schema, res, identifier_list):
         schema['properties'][root_key]['items'])['Identifier Type']
     for it in identifier_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[identifie] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[identifier] = it.get('#text')
             if it.get('@identifierType'):
                 item[identifier_type] = it.get('@identifierType')
@@ -376,18 +394,20 @@ def add_identifier(schema, res, identifier_list):
 
 
 def add_identifier_registration(schema, res, identifierRegistration):
+    """Add identfier registration."""
     root_key = map_field(schema).get('Identifier')
     identifier_registration = map_field(
         schema['properties'][root_key])['Identifier Registration']
     identifier_registration_type = map_field(
         schema['properties'][root_key])['Identifier Registration Type']
     res[root_key] = {
-        identifier_registration : identifierRegistration.get('#text'),
-        identifier_registration_type : identifierRegistration.get('@identifierType')}
+        identifier_registration: identifierRegistration.get('#text'),
+        identifier_registration_type: identifierRegistration.get('@identifierType')}
 
 
 def add_date(schema, res, date_list):
-    if type(date_list) != list:
+    """Add date."""
+    if not isinstance(date_list, list):
         identifier_list = [identifier_list]
     root_key = map_field(schema).get('Date')
     res[root_key] = []
@@ -397,9 +417,9 @@ def add_date(schema, res, date_list):
         schema['properties'][root_key]['items'])['Date Type']
     for it in date_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[date] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[date] = it.get('#text')
             if it.get('@dateType'):
                 item[date_type] = it.get('@dateType')
@@ -407,7 +427,8 @@ def add_date(schema, res, date_list):
 
 
 def add_language(schema, res, language_list):
-    if type(language_list) != list:
+    """Add language."""
+    if not isinstance(language_list, list):
         language_list = [language_list]
     root_key = map_field(schema).get('Language')
     res[root_key] = []
@@ -415,11 +436,12 @@ def add_language(schema, res, language_list):
     for it in language_list:
         if 'lang' not in res:
             res['lang'] = it
-        res[root_key].append({language : it})
+        res[root_key].append({language: it})
 
 
 def add_temporal(schema, res, temporal_list):
-    if type(temporal_list) != list:
+    """Add temporal."""
+    if not isinstance(temporal_list, list):
         temporal_list = [temporal_list]
     root_key = map_field(schema).get('Temporal')
     if not root_key:
@@ -429,16 +451,17 @@ def add_temporal(schema, res, temporal_list):
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in temporal_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[temporal] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[temporal] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_file(schema, res, file_list):
-    if type(file_list) != list:
+    """Add file."""
+    if not isinstance(file_list, list):
         file_list = [file_list]
     root_key = map_field(schema).get('File')
     res[root_key] = []
@@ -463,32 +486,36 @@ def add_file(schema, res, file_list):
 
 
 def add_apc(schema, res, rioxxtermsapc):
+    """Add apc."""
     root_key = map_field(schema).get('APC')
     apc = map_field(schema['properties'][root_key])['APC']
-    res[root_key] = {apc : rioxxtermsapc}
+    res[root_key] = {apc: rioxxtermsapc}
 
 
 def add_source_title(schema, res, source_title_list):
-    if type(source_title_list) != list:
+    """Add source title."""
+    if not isinstance(source_title_list, list):
         source_title_list = [source_title_list]
     root_key = map_field(schema).get('Source Title')
     if not root_key:
         return
     res[root_key] = []
-    source_title = map_field(schema['properties'][root_key]['items'])['Source Title']
+    source_title = map_field(schema['properties'][root_key]['items'])[
+        'Source Title']
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in source_title_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[source_title] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[source_title] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_source_identifier(schema, res, source_identifier_list):
-    if type(identifier_list) != list:
+    """Add source identifier."""
+    if not isinstance(identifier_list, list):
         source_identifier_list = [source_identifier_list]
     root_key = map_field(schema).get('Source Identifier')
     res[root_key] = []
@@ -498,9 +525,9 @@ def add_source_identifier(schema, res, source_identifier_list):
         schema['properties'][root_key]['items'])['Source Identifier Type']
     for it in identifier_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[identifie] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[source_identifier] = it.get('#text')
             if it.get('@identifierType'):
                 item[source_identifier_type] = it.get('@identifierType')
@@ -508,43 +535,52 @@ def add_source_identifier(schema, res, source_identifier_list):
 
 
 def add_volume(schema, res, jpcoarvolume):
+    """Add volume."""
     root_key = map_field(schema).get('Volume Number')
     volume_number = map_field(schema['properties'][root_key])['Volume Number']
-    res[root_key] = {volume_number : jpcoarvolume}
+    res[root_key] = {volume_number: jpcoarvolume}
 
 
 def add_issue(schema, res, jpcoarissue):
+    """Add issue."""
     root_key = map_field(schema).get('Issue Number')
     issue_number = map_field(schema['properties'][root_key])['Issue Number']
-    res[root_key] = {issue_number : jpcoarissue}
+    res[root_key] = {issue_number: jpcoarissue}
 
 
 def add_num_pages(schema, res, numPages):
+    """Add num pages."""
     root_key = map_field(schema).get('Number of Pages')
-    number_of_pages = map_field(schema['properties'][root_key])['Number of Pages']
-    res[root_key] = {number_of_pages : numPages}
+    number_of_pages = map_field(schema['properties'][root_key])[
+        'Number of Pages']
+    res[root_key] = {number_of_pages: numPages}
 
 
 def add_page_start(schema, res, pageStart):
+    """Add page start."""
     root_key = map_field(schema).get('Page Start')
     page_start = map_field(schema['properties'][root_key])['Page Start']
-    res[root_key] = {page_start : pageStart}
+    res[root_key] = {page_start: pageStart}
 
 
 def add_page_end(schema, res, pageEnd):
+    """Add page end."""
     root_key = map_field(schema).get('Page End')
     page_end = map_field(schema['properties'][root_key])['Page End']
-    res[root_key] = {page_end : pageEnd}
+    res[root_key] = {page_end: pageEnd}
 
 
 def add_dissertation_number(schema, res, dissertationNumber):
+    """Add dissertation number."""
     root_key = map_field(schema).get('Dissertation Number')
-    dissertation_number = map_field(schema['properties'][root_key])['Dissertation Number']
-    res[root_key] = {dessertation_number : dissertationNumber}
+    dissertation_number = map_field(schema['properties'][root_key])[
+        'Dissertation Number']
+    res[root_key] = {dessertation_number: dissertationNumber}
 
 
 def add_degree_name(schema, res, degree_name_list):
-    if type(degree_name_list) != list:
+    """Add degree name."""
+    if not isinstance(degree_name_list, list):
         degree_name_list = [degree_name_list]
     root_key = map_field(schema).get('Degree Name')
     if not root_key:
@@ -555,37 +591,41 @@ def add_degree_name(schema, res, degree_name_list):
     language = map_field(schema['properties'][root_key]['items'])['Language']
     for it in degree_name_list:
         item = {}
-        if type(it) == str:
+        if isinstance(it, str):
             item[degree_name] = it
-        elif type(it) == OrderedDict:
+        elif isinstance(it, OrderedDict):
             item[degree_name] = it.get('#text')
             item[language] = it.get('@xml:lang')
         res[root_key].append(item)
 
 
 def add_date_granted(schema, res, dateGranted):
+    """Add date granted."""
     root_key = map_field(schema).get('Date Granted')
     date_granted = map_field(schema['properties'][root_key])['Date Granted']
-    res[root_key] = {date_granted : dateGranted}
+    res[root_key] = {date_granted: dateGranted}
 
 
 def add_version(schema, res, dataciteVersion):
+    """Add version."""
     root_key = map_field(schema).get('Version')
     version = map_field(schema['properties'][root_key])['Version']
-    res[root_key] = {version : dateciteVersion}
+    res[root_key] = {version: dateciteVersion}
 
 
 def add_version_type(schema, res, oaireVersion):
+    """Add version type."""
     root_key = map_field(schema).get('Version Type')
     version_type = map_field(schema['properties'][root_key])['Version Type']
-    if type(oaireVersion) == str:
-        res[root_key] = {version_type : oaireVersion}
-    elif type(oaireVersion) == OrderedDict:
-        res[root_key] = {version_type : oaireVersion.get('#text')}
+    if isinstance(oaireVersion, str):
+        res[root_key] = {version_type: oaireVersion}
+    elif isinstance(oaireVersion, OrderedDict):
+        res[root_key] = {version_type: oaireVersion.get('#text')}
 
 
 def add_geo_location(schema, res, geoLocation_list):
-    if type(geoLocation_list) != list:
+    """Add geo location."""
+    if not isinstance(geoLocation_list, list):
         geoLocation_list = [geoLocation_list]
     root_key = map_field(schema).get('Geo Location')
 
@@ -599,8 +639,8 @@ def add_creator_dc(schema, res, creator_name, lang=''):
         map_field(schema['properties'][creator_field]['items']
                   ['properties'][creator_name_array_name]['items'])
     item = {subitems['Creator Name']: {
-                creator_name_array_subitems['Creator Name']: creator_name,
-                creator_name_array_subitems['Language']: lang}}
+        creator_name_array_subitems['Creator Name']: creator_name,
+        creator_name_array_subitems['Language']: lang}}
     if creator_field not in res:
         res[creator_field] = []
     res[creator_field].append(item)
@@ -697,7 +737,7 @@ def add_description_dc(schema, res, description, description_type='', lang=''):
 
 
 def add_subject_dc(schema, res, subject, subject_uri='',
-                    subject_scheme='', lang=''):
+                   subject_scheme='', lang=''):
     """Add subject."""
     subject_field = map_field(schema)['Subject']
     subitems = map_field(schema['properties'][subject_field]['items'])
@@ -829,6 +869,8 @@ def map_sets(sets, encoding='utf-8'):
 
 
 class BaseMapper:
+    """BaseMapper."""
+
     itemtype_map = {}
 
     @classmethod
@@ -837,42 +879,38 @@ class BaseMapper:
         for t in ItemType.query.all():
             cls.itemtype_map[t.item_type_name.name] = t
 
-
     def __init__(self, xml):
+        """Init."""
         self.xml = xml
         self.json = xmltodict.parse(xml)
         if not BaseMapper.itemtype_map:
             BaseMapper.update_itemtype_map()
         self.itemtype = BaseMapper.itemtype_map['Multiple']
 
-
     def is_deleted(self):
         """Check deleted."""
         return self.json['record']['header'].get('@status') == 'deleted'
 
-
     def identifier(self):
         """Get identifier."""
         return self.json['record']['header'].get('identifier')
-
 
     def datestamp(self):
         """Get datestamp."""
         datestring = self.json['record']['header'].get('datestamp')
         return dateutil.parser.parse(datestring).date()
 
-
     def specs(self):
         """Get specs."""
         s = self.json['record']['header'].get('setSpec')
-        return s if type(s) == list else [s]
-
+        return s if isinstance(s, list) else [s]
 
     def map_itemtype(self, type_tag):
+        """Map itemtype."""
         types = self.json['record']['metadata'][type_tag].get('dc:type')
         if types is None:
             return
-        types = types if type(types) == list else [types]
+        types = types if isinstance(types, list) else [types]
         for t in types:
             if t.lower() in RESOURCE_TYPE_MAP:
                 self.itemtype \
@@ -886,7 +924,6 @@ class DCMapper(BaseMapper):
     def __init__(self, xml):
         """Init."""
         super().__init__(xml)
-
 
     def map(self):
         """Get map."""
@@ -922,10 +959,11 @@ class DCMapper(BaseMapper):
 
 
 class JPCOARMapper(BaseMapper):
+    """JPCOARMapper."""
 
     def __init__(self, xml):
+        """Init."""
         super().__init__(xml)
-
 
     def map(self):
         """Get map."""
@@ -935,43 +973,43 @@ class JPCOARMapper(BaseMapper):
         res = {'$schema': self.itemtype.id,
                'pubdate': str(self.datestamp())}
         add_funcs = {
-            'dc:title' : partial(add_title, self.itemtype.schema, res),
-            'dcterms:alternative' : partial(add_alternative, self.itemtype.schema, res),
-            'jpcoar:creator' : partial(add_creator_jpcoar, self.itemtype.schema, res),
-            'jpcoar:contributor' : partial(add_contributor_jpcoar, self.itemtype.schema, res),
-            'dcterms:accessRights' : partial(add_access_rights, self.itemtype.schema, res),
-            'rioxxterms:apc' : partial(add_apc, self.itemtype.schema, res),
-            'dc:rights' : partial(add_rights, self.itemtype.schema, res),
-#            'jpcoar:rightsHolder' : ,
-            'jpcoar:subject' : partial(add_subject, self.itemtype.schema, res),
-            'datacite:description' : partial(add_description, self.itemtype.schema, res),
-            'dc:publisher' : partial(add_publisher, self.itemtype.schema, res),
-            'datacite:date' : partial(add_date, self.itemtype.schema, res),
-            'dc:language' : partial(add_language, self.itemtype.schema, res),
+            'dc:title': partial(add_title, self.itemtype.schema, res),
+            'dcterms:alternative': partial(add_alternative, self.itemtype.schema, res),
+            'jpcoar:creator': partial(add_creator_jpcoar, self.itemtype.schema, res),
+            'jpcoar:contributor': partial(add_contributor_jpcoar, self.itemtype.schema, res),
+            'dcterms:accessRights': partial(add_access_rights, self.itemtype.schema, res),
+            'rioxxterms:apc': partial(add_apc, self.itemtype.schema, res),
+            'dc:rights': partial(add_rights, self.itemtype.schema, res),
+            #            'jpcoar:rightsHolder' : ,
+            'jpcoar:subject': partial(add_subject, self.itemtype.schema, res),
+            'datacite:description': partial(add_description, self.itemtype.schema, res),
+            'dc:publisher': partial(add_publisher, self.itemtype.schema, res),
+            'datacite:date': partial(add_date, self.itemtype.schema, res),
+            'dc:language': partial(add_language, self.itemtype.schema, res),
             'datacite:version': partial(add_version, self.itemtype.schema, res),
-            'oaire:version' : partial(add_version_type, self.itemtype.schema, res),
-            'jpcoar:identifier' : partial(add_identifier, self.itemtype.schema, res),
-            'jpcoar:identifierRegistration' : partial(add_identifier_registration, self.itemtype.schema, res),
-#            'jpcoar:relation' : ,
-            'dcterms:temporal' : partial(add_temporal, self.itemtype.schema, res),
-#            'datacite:geoLocation' : ,
-#            'jpcoar:fundingReference' : ,
-            'jpcoar:sourceIdentifier' : partial(add_source_identifier, self.itemtype.schema, res),
-            'jpcoar:sourceTitle' : partial(add_source_title, self.itemtype.schema, res),
-            'jpcoar:volume' : partial(add_volume, self.itemtype.schema, res),
-            'jpcoar:issue' : partial(add_issue, self.itemtype.schema, res),
-            'jpcoar:numPages' : partial(add_num_pages, self.itemtype.schema, res),
-            'jpcoar:pageStart' : partial(add_page_start, self.itemtype.schema, res),
-            'jpcoar:pageEnd' : partial(add_page_end, self.itemtype.schema, res),
-            'dcndl:dissertationNumber' : partial(add_dissertation_number, self.itemtype.schema, res),
-            'dcndl:dateGranted' : partial(add_date_granted, self.itemtype.schema, res),
-#            'jpcoar:degreeGrantor' : ,
-#            'jpcoar:conference' : ,
-            'jpcoar:file' : partial(add_file, self.itemtype.schema, res),
+            'oaire:version': partial(add_version_type, self.itemtype.schema, res),
+            'jpcoar:identifier': partial(add_identifier, self.itemtype.schema, res),
+            'jpcoar:identifierRegistration': partial(add_identifier_registration, self.itemtype.schema, res),
+            #            'jpcoar:relation' : ,
+            'dcterms:temporal': partial(add_temporal, self.itemtype.schema, res),
+            #            'datacite:geoLocation' : ,
+            #            'jpcoar:fundingReference' : ,
+            'jpcoar:sourceIdentifier': partial(add_source_identifier, self.itemtype.schema, res),
+            'jpcoar:sourceTitle': partial(add_source_title, self.itemtype.schema, res),
+            'jpcoar:volume': partial(add_volume, self.itemtype.schema, res),
+            'jpcoar:issue': partial(add_issue, self.itemtype.schema, res),
+            'jpcoar:numPages': partial(add_num_pages, self.itemtype.schema, res),
+            'jpcoar:pageStart': partial(add_page_start, self.itemtype.schema, res),
+            'jpcoar:pageEnd': partial(add_page_end, self.itemtype.schema, res),
+            'dcndl:dissertationNumber': partial(add_dissertation_number, self.itemtype.schema, res),
+            'dcndl:dateGranted': partial(add_date_granted, self.itemtype.schema, res),
+            #            'jpcoar:degreeGrantor' : ,
+            #            'jpcoar:conference' : ,
+            'jpcoar:file': partial(add_file, self.itemtype.schema, res),
         }
         for tag in self.json['record']['metadata']['jpcoar:jpcoar']:
             if tag in add_funcs:
-                add_funcs[tag](self.json['record']['metadata']['jpcoar:jpcoar'][tag])
+                add_funcs[tag](
+                    self.json['record']['metadata']['jpcoar:jpcoar'][tag])
 
         return res
-

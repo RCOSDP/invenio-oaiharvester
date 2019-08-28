@@ -244,6 +244,7 @@ def link_error_handler(request, exc, traceback):
 
 
 def is_harvest_running(id, task_id):
+    """Check harvest running."""
     actives = inspect().active()
     for worker in actives:
         for task in actives[worker]:
