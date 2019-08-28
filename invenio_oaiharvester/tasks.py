@@ -38,9 +38,10 @@ from lxml import etree
 from weko_deposit.api import WekoDeposit
 from weko_index_tree.models import Index
 from weko_records.models import ItemMetadata
+from weko_records_ui.utils import soft_delete
 
 from .api import get_records, list_records, send_run_status_mail
-from .harvester import DCMapper
+from .harvester import DCMapper, JPCOARMapper
 from .harvester import list_records as harvester_list_records
 from .harvester import list_sets, map_sets
 from .models import HarvestLogs, HarvestSettings
@@ -152,7 +153,12 @@ def process_item(record, harvesting, counter):
     event_counter('processed_items', counter)
     event = ItemEvents.INIT
     xml = etree.tostring(record, encoding='utf-8').decode()
-    mapper = DCMapper(xml)
+    if harvesting.metadata_prefix == 'oai_dc':
+        mapper = DCMapper(xml)
+    elif harvesting.metadata_prefix == 'jpcoar':
+        mapper = JPCOARMapper(xml)
+    else:
+        return
     hvstid = PersistentIdentifier.query.filter_by(
         pid_type='hvstid', pid_value=mapper.identifier()).first()
     if hvstid:
@@ -187,8 +193,7 @@ def process_item(record, harvesting, counter):
         return
 
     if mapper.is_deleted():
-        recid.status = PIDStatus.DELETED
-        dep.indexer.delete(dep)
+        soft_delete(recid.pid_value)
         event = ItemEvents.DELETE
     else:
         json = mapper.map()
