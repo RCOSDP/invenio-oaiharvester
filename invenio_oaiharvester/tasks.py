@@ -183,9 +183,9 @@ def process_item(record, harvesting, counter):
         event = ItemEvents.CREATE
     if int(harvesting.auto_distribution):
         for i in map_indexes(mapper.specs(), harvesting.index_id):
-            indexes.append(i) if i not in indexes else None
+            indexes.append(str(i)) if i not in indexes else None
     else:
-        indexes.append(harvesting.index_id) if str(
+        indexes.append(str(harvesting.index_id)) if str(
             harvesting.index_id) not in indexes else None
 
     if hvstid and pubdate >= mapper.datestamp() and \

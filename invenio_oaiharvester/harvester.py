@@ -367,7 +367,7 @@ def add_identifier(schema, res, identifier_list):
     for it in identifier_list:
         item = {}
         if type(it) == str:
-            item[identifie] = it
+            item[identifier] = it
         elif type(it) == OrderedDict:
             item[identifier] = it.get('#text')
             if it.get('@identifierType'):
@@ -376,7 +376,7 @@ def add_identifier(schema, res, identifier_list):
 
 
 def add_identifier_registration(schema, res, identifierRegistration):
-    root_key = map_field(schema).get('Identifier')
+    root_key = map_field(schema).get('Identifier Registration')
     identifier_registration = map_field(
         schema['properties'][root_key])['Identifier Registration']
     identifier_registration_type = map_field(
@@ -388,7 +388,7 @@ def add_identifier_registration(schema, res, identifierRegistration):
 
 def add_date(schema, res, date_list):
     if type(date_list) != list:
-        identifier_list = [identifier_list]
+        date_list = [date_list]
     root_key = map_field(schema).get('Date')
     res[root_key] = []
     date = map_field(
@@ -488,7 +488,7 @@ def add_source_title(schema, res, source_title_list):
 
 
 def add_source_identifier(schema, res, source_identifier_list):
-    if type(identifier_list) != list:
+    if type(source_identifier_list) != list:
         source_identifier_list = [source_identifier_list]
     root_key = map_field(schema).get('Source Identifier')
     res[root_key] = []
@@ -496,7 +496,7 @@ def add_source_identifier(schema, res, source_identifier_list):
         schema['properties'][root_key]['items'])['Source Identifier']
     source_identifier_type = map_field(
         schema['properties'][root_key]['items'])['Source Identifier Type']
-    for it in identifier_list:
+    for it in source_identifier_list:
         item = {}
         if type(it) == str:
             item[identifie] = it
@@ -874,6 +874,8 @@ class BaseMapper:
             return
         types = types if type(types) == list else [types]
         for t in types:
+            if type(t) == OrderedDict:
+                t = t['#text']
             if t.lower() in RESOURCE_TYPE_MAP:
                 self.itemtype \
                     = BaseMapper.itemtype_map[RESOURCE_TYPE_MAP[t.lower()]]
