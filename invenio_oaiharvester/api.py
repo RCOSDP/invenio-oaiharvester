@@ -210,15 +210,14 @@ def send_run_status_mail(harvesting, harvest_log):
             setattr(ctx, 'babel_locale', default_lang['lang_code'])
             # send mail
             send_mail(subject, mail_list,
-                      html=\
-                      render_template('invenio_oaiharvester/run_stat_mail.html',
-                                      result_text=result,
-                                      errmsg=harvest_log.errmsg,
-                                      harvesting=harvesting,
-                                      counter=harvest_log.counter,
-                                      start_time=harvest_log.start_time,
-                                      end_time=harvest_log.end_time,
-                                      update_style=update_style,
-                                      lang_code=default_lang['lang_code']))
+                      html=render_template('invenio_oaiharvester/run_stat_mail.html',
+                                           result_text=result,
+                                           errmsg=harvest_log.errmsg,
+                                           harvesting=harvesting,
+                                           counter=harvest_log.counter,
+                                           start_time=harvest_log.start_time,
+                                           end_time=harvest_log.end_time,
+                                           update_style=update_style,
+                                           lang_code=default_lang['lang_code']))
     except Exception as ex:
         current_app.logger.error(ex)
