@@ -202,6 +202,13 @@ def process_item(record, harvesting, counter):
         dep.update({'actions': 'publish', 'index': indexes}, json)
         dep.commit()
         dep.publish()
+        # add item versioning
+        pid = PersistentIdentifier.query.filter_by(
+            pid_type='recid', pid_value=dep.pid.pid_value).first()
+        with current_app.test_request_context() as ctx:
+            first_ver = dep.newversion(pid)
+            first_ver.publish()
+
     harvesting.item_processed = harvesting.item_processed + 1
     db.session.commit()
 
